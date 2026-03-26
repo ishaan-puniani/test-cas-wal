@@ -3,6 +3,8 @@
 const http = require('http');
 const crypto = require('crypto');
 const url = require('url');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 const SHARED_SECRET = process.env.CA_SHARED_SECRET || 'default-secret';
@@ -288,12 +290,41 @@ function handleWager(params) {
     };
   }
 
+  // Check if account is blocked (1035)
+  if (isAccountBlocked(account)) {
+    return {
+      code: 1035,
+      status: 'Account Blocked',
+      message: `Account is blocked: ${account.blocked_reason || 'suspended'}`,
+      api_version: params.api_version,
+    };
+  }
+
+  // Check if currency is registered (1007)
+  if (!validateCurrency(account.currency)) {
+    return {
+      code: 1007,
+      status: 'Unknown Currency',
+      message: `Currency ${account.currency} is not registered for this operator`,
+      api_version: params.api_version,
+    };
+  }
+
   const totalBalance = account.real_balance + account.bonus_balance;
   if (totalBalance < betAmount) {
     return {
       code: 1006,
       status: 'Out of Money',
       message: 'Insufficient funds',
+      api_version: params.api_version,
+    };
+  }
+
+  // Check responsible gaming limits (1019)
+  const limitError = checkGamingLimits(params.account_id, betAmount);
+  if (limitError) {
+    return {
+      ...limitError,
       api_version: params.api_version,
     };
   }
@@ -315,6 +346,9 @@ function handleWager(params) {
 
   account.real_balance -= realBet;
   account.bonus_balance -= bonusBet;
+
+  // Update limits after successful wager
+  updateLimitsAfterWager(params.account_id, betAmount);
 
   // Store transaction
   const wagerTxId = `WALL_TXN_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -923,6 +957,80 @@ function handleRequest(req, res) {
   const query = parsedUrl.query;
 
   res.setHeader('Content-Type', 'application/json');
+
+  // Swagger UI endpoint
+  if (pathname === '/api-docs' || pathname === '/swagger-ui') {
+    res.setHeader('Content-Type', 'text/html');
+    const swaggerUIHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>CloudAggregator Mock Wallet - API Docs</title>
+          <meta charset="utf-8"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@3/swagger-ui.css">
+          <style>
+            html {
+              box-sizing: border-box;
+              overflow: -moz-scrollbars-vertical;
+              overflow-y: scroll;
+            }
+            *,
+            *:before,
+            *:after {
+              box-sizing: inherit;
+            }
+            body {
+              margin:0;
+              padding:0;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="swagger-ui"></div>
+          <script src="https://unpkg.com/swagger-ui-dist@3/swagger-ui-bundle.js"></script>
+          <script src="https://unpkg.com/swagger-ui-dist@3/swagger-ui-standalone-preset.js"></script>
+          <script>
+            window.onload = function() {
+              SwaggerUIBundle({
+                url: "http://localhost:3000/swagger.json",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                  SwaggerUIBundle.presets.apis,
+                  SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                  SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout"
+              })
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(swaggerUIHtml);
+    return;
+  }
+
+  // Swagger JSON endpoint
+  if (pathname === '/swagger.json') {
+    try {
+      const swaggerPath = path.join(__dirname, 'swagger.json');
+      const swaggerContent = fs.readFileSync(swaggerPath, 'utf8');
+      const swaggerObj = JSON.parse(swaggerContent);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(swaggerObj, null, 2));
+      return;
+    } catch (err) {
+      console.error('Error reading swagger.json:', err.message);
+      res.writeHead(500);
+      res.end(JSON.stringify({ error: 'Failed to load swagger spec' }));
+      return;
+    }
+  }
 
   if (pathname === '/cloudagg') {
     const signature = req.headers['x-ca-signature'];

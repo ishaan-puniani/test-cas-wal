@@ -14,9 +14,13 @@ A strict-mode Node.js mock wallet server that implements the CloudAggregator Pla
   - `refund`
   - `jackpot`
   - `purchase`
+- **All error codes** (200, 1, 102, 110, 400, 409, 1000, 1003, 1006, 1007, 1008, 1019, 1035)
 - **Idempotency** built-in using transaction IDs
 - **Round-state tracking** (open → pending → completed)
-- **In-memory stores** for quick testing
+- **Responsible gaming limits** (daily wager, loss, session time, deposit)
+- **Account status checks** (active/blocked)
+- **Currency validation** (EUR, USD, GBP, SEK, INR, COINS, CHIPS)
+- **Swagger/OpenAPI 3.0 definition** included
 - **Sample flow tests** included
 
 ## Quick Start
@@ -36,9 +40,33 @@ CA_SHARED_SECRET=supersecret npm start
 # Server listens on http://localhost:3000/cloudagg
 ```
 
-### Testing with Signed Requests
+### Viewing API Documentation
 
-#### Option 1: Using the signed-curl helper
+Once the server is running, open your browser:
+
+```
+http://localhost:3000/api-docs
+```
+
+This opens an interactive Swagger UI with:
+- All endpoint documentation
+- Request/response schemas
+- Error code reference
+- Live "Try it out" capability (requires valid signatures)
+
+Alternative: View raw OpenAPI spec:
+```
+http://localhost:3000/swagger.json
+```
+
+View raw YAML spec:
+```
+swagger.yaml
+```
+
+## Testing with Signed Requests
+
+### Option 1: Using the signed-curl helper
 
 ```bash
 # Terminal 1: Start server
@@ -167,18 +195,77 @@ STRICT_MODE=false npm start
 
 All responses return HTTP 200 with status code in JSON body:
 
-| Code | Status | Description |
-|------|--------|-------------|
-| 200 | Success | Operation succeeded |
-| 1 | Technical Error | Internal server error |
-| 102 | Wager Not Found | Refund: no matching wager |
-| 110 | Operation Not Allowed | Business rule violation |
-| 400 | Transaction Parameter Mismatch | Idempotency: fields mismatch |
-| 409 | Round Closed | Round already completed |
-| 1000 | Not Logged On | Session invalid (only in GetBalance/GetAccount) |
-| 1003 | Authentication Failed | Session/account mismatch |
-| 1006 | Out of Money | Insufficient funds |
-| 1008 | Parameter Required | Missing required parameter |
+| Code | Status | Description | Scenario |
+|------|--------|-------------|----------|
+| 200 | Success | Operation succeeded | Successful transaction |
+| 1 | Technical Error | Internal server error | Unexpected backend issue |
+| 102 | Wager Not Found | Refund: no matching wager | Refund called without prior wager |
+| 110 | Operation Not Allowed | Business rule violation | Invalid amounts, account mismatch, round closed |
+| 400 | Transaction Parameter Mismatch | Idempotency: fields mismatch | Same transaction_id, different fields |
+| 409 | Round Closed | Round already completed | Wager/result after round completion |
+| 1000 | Not Logged On | Session invalid/expired | **NEVER returned for result/refund** |
+| 1003 | Authentication Failed | Session/account mismatch | Session doesn't match account |
+| 1006 | Out of Money | Insufficient funds | Wager exceeds balance |
+| 1007 | Unknown Currency | Currency not registered | Account currency not in: EUR, USD, GBP, SEK, INR, COINS, CHIPS |
+| 1008 | Parameter Required | Missing required parameter | Missing: request, account_id, etc. |
+| 1019 | Gaming Limit | Responsible gaming limit exceeded | Daily wager/loss/session limit breach |
+| 1035 | Account Blocked | Account suspended/blocked | Account status = 'blocked' |
+
+### Testing Error Codes
+
+Use environment variables to test specific error conditions:
+
+```bash
+# Test with blocked account (return 1035)
+curl -s -H "X-CA-Signature: <sig>" \
+  "http://localhost:3000/cloudagg?request=wager&session_id=CA_OP_42_blocked&account_id=PLR_BLOCKED&..."
+```
+
+Create test accounts with different statuses by editing `initTestAccount()` function in `mock-operator-wallet.js`.
+
+## Responsive Gaming & Account Validation
+
+The mock wallet includes built-in responsible gaming and account management features:
+
+### Supported Currencies (1007 error)
+```
+EUR, USD, GBP, SEK, INR, COINS, CHIPS
+```
+
+Returns `1007 (Unknown Currency)` if account currency not registered.
+
+### Account Blocking (1035 error)
+Test account can be marked as blocked with a reason:
+```javascript
+// In mock-operator-wallet.js
+account.status = 'blocked';
+account.blocked_reason = 'self-excluded';
+```
+
+Returns `1035 (Account Blocked)` when attempting wager on blocked account.
+
+### Responsible Gaming Limits (1019 error)
+Daily limits configured per account:
+- **Daily Wager Limit**: $1000.00
+- **Daily Loss Limit**: $500.00
+- **Session Time Limit**: 120 minutes
+- **Deposit Limit**: $5000.00
+
+Returns `1019 (Gaming Limit)` when:
+- Today's wagers + new bet > daily wager limit
+- Session time exceeds configured maximum
+- Daily losses exceed threshold
+
+Modify limits in `initTestAccount()`:
+```javascript
+accountLimits.set(accountId, {
+  daily_wager_limit: 1000.00,
+  daily_loss_limit: 500.00,
+  session_time_limit: 120,
+  deposit_limit: 5000.00,
+  ...
+});
+```
 
 ## Idempotency
 

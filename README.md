@@ -97,7 +97,27 @@ CA_SHARED_SECRET=supersecret npm run test:flows
 
 ### Base URL
 ```
-GET http://localhost:3000/cloudagg
+GET http://localhost:3000/cloudagg/{operation}
+```
+
+Each operation is available as a separate endpoint path. This provides clear separation in the Swagger UI.
+
+### Supported Operations
+
+| Path | Operation | Description |
+|------|-----------|-------------|
+| `/cloudagg/getaccount` | GetAccount | Retrieve player profile |
+| `/cloudagg/getbalance` | GetBalance | Get wallet balance |
+| `/cloudagg/wager` | Wager | Place bet |
+| `/cloudagg/result` | Result | Process game outcome |
+| `/cloudagg/wagerAndResult` | WagerAndResult | Atomic bet & result |
+| `/cloudagg/refund` | Refund | Reverse wager |
+| `/cloudagg/jackpot` | Jackpot | Credit progressive prize |
+| `/cloudagg/purchase` | Purchase | Feature buy |
+
+**Legacy Support:** Requests can also use query parameter:
+```
+GET /cloudagg?request=getaccount&...
 ```
 
 ### Required Headers
@@ -111,49 +131,49 @@ Content-Type: application/json
 #### GetAccount
 ```bash
 curl -H "X-CA-Signature: <sig>" \
-  "http://localhost:3000/cloudagg?request=getaccount&session_id=CA_OP_42_demo&account_id=PLR_78345&device=desktop&api_version=2.0"
+  "http://localhost:3000/cloudagg/getaccount?session_id=CA_OP_42_demo&account_id=PLR_78345&device=desktop&api_version=2.0"
 ```
 
 #### GetBalance
 ```bash
 curl -H "X-CA-Signature: <sig>" \
-  "http://localhost:3000/cloudagg?request=getbalance&session_id=CA_OP_42_demo&account_id=PLR_78345&device=desktop&game_id=50301&api_version=2.0"
+  "http://localhost:3000/cloudagg/getbalance?session_id=CA_OP_42_demo&account_id=PLR_78345&device=desktop&game_id=50301&api_version=2.0"
 ```
 
 #### Wager
 ```bash
 curl -H "X-CA-Signature: <sig>" \
-  "http://localhost:3000/cloudagg?request=wager&session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_001&round_id=RND_001&game_id=50301&bet_amount=5.00&device=desktop&api_version=2.0"
+  "http://localhost:3000/cloudagg/wager?session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_001&round_id=RND_001&game_id=50301&bet_amount=5.00&device=desktop&api_version=2.0"
 ```
 
 #### Result
 ```bash
 curl -H "X-CA-Signature: <sig>" \
-  "http://localhost:3000/cloudagg?request=result&session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_RESULT_001&round_id=RND_001&game_id=50301&win_amount=12.50&game_status=completed&api_version=2.0"
+  "http://localhost:3000/cloudagg/result?session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_RESULT_001&round_id=RND_001&game_id=50301&win_amount=12.50&game_status=completed&api_version=2.0"
 ```
 
 #### WagerAndResult (Atomic)
 ```bash
 curl -H "X-CA-Signature: <sig>" \
-  "http://localhost:3000/cloudagg?request=wagerAndResult&session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_WR_001&round_id=RND_WR_001&game_id=50301&bet_amount=2.00&win_amount=6.00&game_status=completed&device=desktop&api_version=2.0"
+  "http://localhost:3000/cloudagg/wagerAndResult?session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_WR_001&round_id=RND_WR_001&game_id=50301&bet_amount=2.00&win_amount=6.00&game_status=completed&device=desktop&api_version=2.0"
 ```
 
 #### Refund
 ```bash
 curl -H "X-CA-Signature: <sig>" \
-  "http://localhost:3000/cloudagg?request=refund&session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_001&game_id=50301&device=desktop&api_version=2.0"
+  "http://localhost:3000/cloudagg/refund?session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_001&game_id=50301&device=desktop&api_version=2.0"
 ```
 
 #### Jackpot
 ```bash
 curl -H "X-CA-Signature: <sig>" \
-  "http://localhost:3000/cloudagg?request=jackpot&session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_JP_001&round_id=RND_JP_001&game_id=50301&jackpot_amount=10000.00&game_status=completed&api_version=2.0"
+  "http://localhost:3000/cloudagg/jackpot?session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_JP_001&round_id=RND_JP_001&game_id=50301&jackpot_amount=10000.00&game_status=completed&api_version=2.0"
 ```
 
 #### Purchase
 ```bash
 curl -H "X-CA-Signature: <sig>" \
-  "http://localhost:3000/cloudagg?request=purchase&session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_PURCHASE_001&purchase_amount=1.50&device=desktop&api_version=2.0"
+  "http://localhost:3000/cloudagg/purchase?session_id=CA_OP_42_demo&account_id=PLR_78345&transaction_id=TXN_PURCHASE_001&purchase_amount=1.50&device=desktop&api_version=2.0"
 ```
 
 ## Signature Generation

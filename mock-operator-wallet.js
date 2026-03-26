@@ -1032,7 +1032,7 @@ function handleRequest(req, res) {
     }
   }
 
-  if (pathname === '/cloudagg') {
+  if (pathname === '/cloudagg' || pathname.startsWith('/cloudagg/')) {
     const signature = req.headers['x-ca-signature'];
 
     // In STRICT_MODE, signature is required
@@ -1061,7 +1061,12 @@ function handleRequest(req, res) {
     }
 
     const params = parseParams(query);
-    const request = params.request;
+    
+    // Determine request type from path or query parameter
+    let request = params.request;
+    if (!request && pathname.startsWith('/cloudagg/')) {
+      request = pathname.substring(9); // Remove '/cloudagg/' prefix
+    }
 
     let response;
     switch (request) {

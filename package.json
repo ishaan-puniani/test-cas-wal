@@ -1,0 +1,24 @@
+{
+  "name": "test-cas-wal",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/ishaan-puniani/test-cas-wal#readme",
+  "bugs": {
+    "url": "https://github.com/ishaan-puniani/test-cas-wal/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ishaan-puniani/test-cas-wal.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node mock-operator-wallet.js",
+    "test:flow": "bash scripts/flow-test.sh",
+    "test:flow:advanced": "bash scripts/flow-test-advanced.sh",
+    "test:flows": "echo 'Running basic flow...' && bash scripts/flow-test.sh && echo '' && echo 'Running advanced flow...' && bash scripts/flow-test-advanced.sh",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

@@ -14,6 +14,11 @@
   "author": "",
   "type": "commonjs",
   "main": "index.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "swagger-ui-express": "^5.0.0",
+    "yaml": "^2.3.4"
+  },
   "scripts": {
     "start": "node mock-operator-wallet.js",
     "test:flow": "bash scripts/flow-test.sh",

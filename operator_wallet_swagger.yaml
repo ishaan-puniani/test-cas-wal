@@ -1472,6 +1472,2074 @@ paths:
                   value: { code: 1035, status: "Account Blocked", message: "account_blocked", api_version: "2.0" }
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  TEST UTILITY PATHS
+# ══════════════════════════════════════════════════════════════════════════════
+
+  /whats-in-data:
+    get:
+      operationId: whatsInData
+      summary: "Inspect full in-memory store"
+      description: |
+        Returns the complete current state of `IN_MEMORY_WALLET_DATA`:
+        accounts, sessions, and the ordered transaction log.
+        Use this to verify state before and after wallet callbacks.
+      tags:
+        - Test Utilities
+      security: []
+      responses:
+        '200':
+          description: Current in-memory store snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                snapshot:
+                  summary: Example snapshot
+                  value:
+                    code: 200
+                    status: "Success"
+                    api_version: "2.0"
+                    data:
+                      accounts:
+                        PLR_78345:
+                          real_balance: 250.00
+                          bonus_balance: 50.00
+                          currency: "EUR"
+                          language: "en_GB"
+                          country: "SE"
+                          city: "Stockholm"
+                          game_mode: 1
+                          wallet_order: "cash_money,bonus_money"
+                          blocked: false
+                      sessions:
+                        demo-session: "PLR_78345"
+                      transactions: []
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  VIRTUAL PATHS — one path stub per create-data operation.
+#  All resolve to GET /create-data with the matching `request` parameter.
+# ══════════════════════════════════════════════════════════════════════════════
+
+  /create-data?request=create_account:
+    get:
+      operationId: createAccount
+      summary: "Create Account — Add a new player to the in-memory store"
+      description: |
+        Creates a new player account. All fields have sensible defaults so you
+        can execute immediately from any example below.
+
+        **Tip:** Create `PLR_78345` first, then map a session with
+        `/create-data?request=create_session`.
+      tags:
+        - Create Account
+      security: []
+      parameters:
+        - name: request
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [create_account]
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "PLR_78345"
+        - name: real_balance
+          in: query
+          required: false
+          schema:
+            type: number
+          example: 1000.00
+        - name: bonus_balance
+          in: query
+          required: false
+          schema:
+            type: number
+          example: 50.00
+        - name: currency
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "EUR"
+        - name: language
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "en_GB"
+        - name: country
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "SE"
+        - name: city
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "Stockholm"
+        - name: game_mode
+          in: query
+          required: false
+          schema:
+            type: integer
+          example: 1
+        - name: wallet_order
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "cash_money,bonus_money"
+        - name: blocked
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+          example: "false"
+      responses:
+        '200':
+          description: Account created.
+          content:
+            application/json:
+              examples:
+                standard:
+                  summary: "PLR_78345 — €1000 real + €50 bonus (cash-first)"
+                  value: { request: create_account, account_id: "PLR_78345", real_balance: 1000.00, bonus_balance: 50.00, currency: "EUR", language: "en_GB", country: "SE", city: "Stockholm", game_mode: 1, wallet_order: "cash_money,bonus_money", blocked: "false" }
+                bonusFirst:
+                  summary: "PLR_78345 — €1000 real + €50 bonus (bonus-first)"
+                  value: { request: create_account, account_id: "PLR_78345", real_balance: 1000.00, bonus_balance: 50.00, currency: "EUR", language: "en_GB", country: "SE", city: "Stockholm", game_mode: 1, wallet_order: "bonus_money,cash_money", blocked: "false" }
+                broke:
+                  summary: "PLR_BROKE — zero balance (triggers Out-of-Money on wager)"
+                  value: { request: create_account, account_id: "PLR_BROKE", real_balance: 0, bonus_balance: 0, currency: "EUR", language: "en", game_mode: 1, wallet_order: "cash_money,bonus_money", blocked: "false" }
+                blocked:
+                  summary: "PLR_BLOCKED — blocked account (triggers error 1035)"
+                  value: { request: create_account, account_id: "PLR_BLOCKED", real_balance: 500.00, bonus_balance: 0, currency: "EUR", language: "en", game_mode: 1, wallet_order: "cash_money,bonus_money", blocked: "true" }
+                bonusOnly:
+                  summary: "PLR_BONUS — bonus balance only"
+                  value: { request: create_account, account_id: "PLR_BONUS", real_balance: 0, bonus_balance: 200.00, currency: "EUR", language: "en", game_mode: 1, wallet_order: "bonus_money,cash_money", blocked: "false" }
+                minimal:
+                  summary: "PLR_MIN — minimal fields only"
+                  value: { request: create_account, account_id: "PLR_MIN", real_balance: 500.00, bonus_balance: 0, currency: "USD", language: "en", game_mode: 1, wallet_order: "cash_money,bonus_money", blocked: "false" }
+
+  /create-data?request=create_session:
+    get:
+      operationId: createSession
+      summary: "Create Session — Map a session_id to an existing account"
+      description: |
+        Links a `session_id` to an `account_id`. The session is then used in
+        all wallet callback requests as the authentication token.
+
+        **Requirement:** The `account_id` must already exist — create it first
+        with `/create-data?request=create_account`.
+      tags:
+        - Create Session
+      security: []
+      parameters:
+        - name: request
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [create_session]
+        - name: session_id
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "demo-session"
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "PLR_78345"
+      responses:
+        '200':
+          description: Session mapped.
+          content:
+            application/json:
+              examples:
+                standard:
+                  summary: "demo-session → PLR_78345"
+                  value: { request: create_session, session_id: "demo-session", account_id: "PLR_78345" }
+                broke:
+                  summary: "broke-session → PLR_BROKE"
+                  value: { request: create_session, session_id: "broke-session", account_id: "PLR_BROKE" }
+                blocked:
+                  summary: "blocked-session → PLR_BLOCKED"
+                  value: { request: create_session, session_id: "blocked-session", account_id: "PLR_BLOCKED" }
+                bonus:
+                  summary: "bonus-session → PLR_BONUS"
+                  value: { request: create_session, session_id: "bonus-session", account_id: "PLR_BONUS" }
+
+  /create-data?request=set_real_balance:
+    get:
+      operationId: setRealBalance
+      summary: "Set Real Balance — Overwrite a player's real money balance"
+      description: |
+        Directly sets `real_balance` for the given `account_id`.
+        Use this to quickly put the account into a specific state before
+        triggering a wallet callback.
+      tags:
+        - Set Real Balance
+      security: []
+      parameters:
+        - name: request
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [set_real_balance]
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "PLR_78345"
+        - name: real_balance
+          in: query
+          required: true
+          schema:
+            type: number
+          example: 500.00
+      responses:
+        '200':
+          description: Real balance updated.
+          content:
+            application/json:
+              examples:
+                rich:
+                  summary: "Set real_balance = 10000.00 (high roller)"
+                  value: { request: set_real_balance, account_id: "PLR_78345", real_balance: 10000.00 }
+                normal:
+                  summary: "Set real_balance = 500.00"
+                  value: { request: set_real_balance, account_id: "PLR_78345", real_balance: 500.00 }
+                low:
+                  summary: "Set real_balance = 5.00 (near-empty)"
+                  value: { request: set_real_balance, account_id: "PLR_78345", real_balance: 5.00 }
+                penny:
+                  summary: "Set real_balance = 0.01 (minimum possible)"
+                  value: { request: set_real_balance, account_id: "PLR_78345", real_balance: 0.01 }
+                zero:
+                  summary: "Set real_balance = 0.00 (force Out-of-Money on next wager)"
+                  value: { request: set_real_balance, account_id: "PLR_78345", real_balance: 0 }
+
+  /create-data?request=set_bonus_balance:
+    get:
+      operationId: setBonusBalance
+      summary: "Set Bonus Balance — Overwrite a player's bonus money balance"
+      description: |
+        Directly sets `bonus_balance` for the given `account_id`.
+        Useful for testing bonus-wallet draw order and `Out of Money` scenarios
+        where the player has bonus but no real funds.
+      tags:
+        - Set Bonus Balance
+      security: []
+      parameters:
+        - name: request
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [set_bonus_balance]
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "PLR_78345"
+        - name: bonus_balance
+          in: query
+          required: true
+          schema:
+            type: number
+          example: 100.00
+      responses:
+        '200':
+          description: Bonus balance updated.
+          content:
+            application/json:
+              examples:
+                high:
+                  summary: "Set bonus_balance = 500.00"
+                  value: { request: set_bonus_balance, account_id: "PLR_78345", bonus_balance: 500.00 }
+                standard:
+                  summary: "Set bonus_balance = 100.00"
+                  value: { request: set_bonus_balance, account_id: "PLR_78345", bonus_balance: 100.00 }
+                low:
+                  summary: "Set bonus_balance = 5.00 (near-empty)"
+                  value: { request: set_bonus_balance, account_id: "PLR_78345", bonus_balance: 5.00 }
+                zero:
+                  summary: "Set bonus_balance = 0.00 (no bonus)"
+                  value: { request: set_bonus_balance, account_id: "PLR_78345", bonus_balance: 0 }
+
+  /create-data?request=block_account:
+    get:
+      operationId: blockAccount
+      summary: "Block Account — Block or unblock a player account"
+      description: |
+        Sets the `blocked` flag on a player account.
+        A blocked account returns error `1035` on wager, wagerAndResult, and purchase.
+      tags:
+        - Block Account
+      security: []
+      parameters:
+        - name: request
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [block_account]
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "PLR_78345"
+        - name: blocked
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: ["true", "false"]
+          example: "true"
+      responses:
+        '200':
+          description: Block status updated.
+          content:
+            application/json:
+              examples:
+                block:
+                  summary: "Block PLR_78345 (next wager → error 1035)"
+                  value: { request: block_account, account_id: "PLR_78345", blocked: "true" }
+                unblock:
+                  summary: "Unblock PLR_78345"
+                  value: { request: block_account, account_id: "PLR_78345", blocked: "false" }
+
+  /create-data?request=set_wallet_order:
+    get:
+      operationId: setWalletOrder
+      summary: "Set Wallet Order — Change bonus/cash draw priority"
+      description: |
+        Updates the `wallet_order` field for the given account. This controls
+        which pot is drawn from first on each wager.
+
+        | Value | Meaning |
+        |---|---|
+        | `cash_money,bonus_money` | Real money deducted first |
+        | `bonus_money,cash_money` | Bonus money deducted first |
+      tags:
+        - Set Wallet Order
+      security: []
+      parameters:
+        - name: request
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [set_wallet_order]
+        - name: account_id
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "PLR_78345"
+        - name: wallet_order
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "cash_money,bonus_money"
+      responses:
+        '200':
+          description: Wallet order updated.
+          content:
+            application/json:
+              examples:
+                cashFirst:
+                  summary: "Cash first — real money deducted before bonus"
+                  value: { request: set_wallet_order, account_id: "PLR_78345", wallet_order: "cash_money,bonus_money" }
+                bonusFirst:
+                  summary: "Bonus first — bonus money deducted before real"
+                  value: { request: set_wallet_order, account_id: "PLR_78345", wallet_order: "bonus_money,cash_money" }
+                cashOnly:
+                  summary: "Cash only — no bonus draw"
+                  value: { request: set_wallet_order, account_id: "PLR_78345", wallet_order: "cash_money" }
+                bonusOnly:
+                  summary: "Bonus only — no real draw"
+                  value: { request: set_wallet_order, account_id: "PLR_78345", wallet_order: "bonus_money" }
+
+  /clear-simulations:
+    get:
+      operationId: clearSimulations
+      summary: "Clear all queued simulations"
+      description: Empties the simulation queue for all accounts.
+      tags:
+        - Simulation
+      security: []
+      responses:
+        '200':
+          description: Queue cleared.
+          content:
+            application/json:
+              examples:
+                cleared:
+                  summary: Queue cleared
+                  value: { code: 200, status: "Success", message: "Simulations queue cleared", SIMULATIONS_QUEUE: [] }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
+#  VIRTUAL PATHS — one path stub per simulation operation.
+#  All resolve to GET /add-in-simulation-queue with the matching `request` param.
+# ══════════════════════════════════════════════════════════════════════════════
+
+  /add-in-simulation-queue?request=getaccount:
+    get:
+      operationId: simGetAccount
+      summary: "Simulate GetAccount — ✓ success scenarios"
+      description: |
+        Queues a simulated **success** response for the next `/cloudagg?request=getaccount`
+        call by this `account_id`. To simulate an error, use the dedicated
+        `[✗ CODE]` paths listed below in this group.
+      tags: ["Sim: GetAccount"]
+      security: []
+      parameters:
+        - { name: request,      in: query, required: true,  schema: { type: string, enum: [getaccount] } }
+        - { name: account_id,   in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: real_balance,  in: query, required: false, schema: { type: number },  example: 250.00 }
+        - { name: bonus_balance, in: query, required: false, schema: { type: number },  example: 50.00 }
+        - { name: currency,      in: query, required: false, schema: { type: string },  example: "EUR" }
+        - { name: language,      in: query, required: false, schema: { type: string },  example: "en_GB" }
+        - { name: game_mode,     in: query, required: false, schema: { type: integer }, example: 1 }
+        - { name: wallet_order,  in: query, required: false, schema: { type: string },  example: "cash_money,bonus_money" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: "✓ Success — standard account (250 real + 50 bonus)"
+                  value: { request: "getaccount", account_id: "PLR_78345", real_balance: 250, bonus_balance: 50, currency: "EUR", language: "en_GB", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_bonus_only:
+                  summary: "✓ Success — bonus-only balance (real=0)"
+                  value: { request: "getaccount", account_id: "PLR_78345", real_balance: 0, bonus_balance: 200, currency: "EUR", language: "en_GB", game_mode: 1, wallet_order: "bonus_money,cash_money" }
+                success_real_only:
+                  summary: "✓ Success — real balance only, no bonus"
+                  value: { request: "getaccount", account_id: "PLR_78345", real_balance: 500, bonus_balance: 0, currency: "EUR", language: "en_GB", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_high_roller:
+                  summary: "✓ Success — high-roller account"
+                  value: { request: "getaccount", account_id: "PLR_78345", real_balance: 10000, bonus_balance: 2000, currency: "EUR", language: "en_GB", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_game_mode_2:
+                  summary: "✓ Success — free rounds / demo mode (game_mode=2)"
+                  value: { request: "getaccount", account_id: "PLR_78345", real_balance: 250, bonus_balance: 50, currency: "EUR", language: "en_GB", game_mode: 2, wallet_order: "cash_money,bonus_money" }
+                success_bonus_first:
+                  summary: "✓ Success — bonus wallet priority order"
+                  value: { request: "getaccount", account_id: "PLR_78345", real_balance: 100, bonus_balance: 150, currency: "EUR", language: "en_GB", game_mode: 1, wallet_order: "bonus_money,cash_money" }
+                success_low_balance:
+                  summary: "✓ Success — near-zero balance"
+                  value: { request: "getaccount", account_id: "PLR_78345", real_balance: 0.5, bonus_balance: 0, currency: "EUR", language: "en_GB", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+
+  /add-in-simulation-queue?request=getaccount&error_code=1:
+    get:
+      operationId: simGetAccountErr1
+      summary: "[✗ 1] GetAccount — Technical Error"
+      tags: ["Sim: GetAccount"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getaccount] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "internal_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1:
+                  summary: "✗ 1 — Technical Error"
+                  value: { request: getaccount, account_id: "PLR_78345", error_code: 1, error_message: "internal_error" }
+
+  /add-in-simulation-queue?request=getaccount&error_code=1000:
+    get:
+      operationId: simGetAccountErr1000
+      summary: "[✗ 1000] GetAccount — Not Logged On"
+      tags: ["Sim: GetAccount"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getaccount] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1000 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "session_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1000:
+                  summary: "✗ 1000 — Not Logged On"
+                  value: { request: getaccount, account_id: "PLR_78345", error_code: 1000, error_message: "session_invalid" }
+
+  /add-in-simulation-queue?request=getaccount&error_code=1003:
+    get:
+      operationId: simGetAccountErr1003
+      summary: "[✗ 1003] GetAccount — Authentication Failed"
+      tags: ["Sim: GetAccount"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getaccount] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1003 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "authentication_failed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1003:
+                  summary: "✗ 1003 — Authentication Failed"
+                  value: { request: getaccount, account_id: "PLR_78345", error_code: 1003, error_message: "authentication_failed" }
+
+  /add-in-simulation-queue?request=getaccount&error_code=1008:
+    get:
+      operationId: simGetAccountErr1008
+      summary: "[✗ 1008] GetAccount — Missing Required Parameter"
+      tags: ["Sim: GetAccount"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getaccount] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1008 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "missing_parameter" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1008:
+                  summary: "✗ 1008 — Missing Required Parameter"
+                  value: { request: getaccount, account_id: "PLR_78345", error_code: 1008, error_message: "missing_parameter" }
+
+  /add-in-simulation-queue?request=getaccount&error_code=1035:
+    get:
+      operationId: simGetAccountErr1035
+      summary: "[✗ 1035] GetAccount — Account Blocked"
+      tags: ["Sim: GetAccount"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getaccount] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1035 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "account_blocked" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1035:
+                  summary: "✗ 1035 — Account Blocked"
+                  value: { request: getaccount, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=getbalance:
+    get:
+      operationId: simGetBalance
+      summary: "Simulate GetBalance — ✓ success scenarios"
+      description: |
+        Queues a simulated **success** response for the next `/cloudagg?request=getbalance`
+        call by this `account_id`. To simulate an error, use the dedicated
+        `[✗ CODE]` paths listed below in this group.
+      tags: ["Sim: GetBalance"]
+      security: []
+      parameters:
+        - { name: request,      in: query, required: true,  schema: { type: string, enum: [getbalance] } }
+        - { name: account_id,   in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: real_balance,  in: query, required: false, schema: { type: number },  example: 250.00 }
+        - { name: bonus_balance, in: query, required: false, schema: { type: number },  example: 50.00 }
+        - { name: game_mode,     in: query, required: false, schema: { type: integer }, example: 1 }
+        - { name: wallet_order,  in: query, required: false, schema: { type: string },  example: "cash_money,bonus_money" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: "✓ Success — normal balance (250 real + 50 bonus)"
+                  value: { request: "getbalance", account_id: "PLR_78345", real_balance: 250, bonus_balance: 50, game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_zero:
+                  summary: "✓ Success — zero balance"
+                  value: { request: "getbalance", account_id: "PLR_78345", real_balance: 0, bonus_balance: 0, game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_bonus_heavy:
+                  summary: "✓ Success — mostly bonus balance"
+                  value: { request: "getbalance", account_id: "PLR_78345", real_balance: 10, bonus_balance: 300, game_mode: 1, wallet_order: "bonus_money,cash_money" }
+                success_real_only:
+                  summary: "✓ Success — real balance only (bonus=0)"
+                  value: { request: "getbalance", account_id: "PLR_78345", real_balance: 500, bonus_balance: 0, game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_high_roller:
+                  summary: "✓ Success — high-roller balance"
+                  value: { request: "getbalance", account_id: "PLR_78345", real_balance: 50000, bonus_balance: 5000, game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_game_mode_2:
+                  summary: "✓ Success — free rounds mode (game_mode=2)"
+                  value: { request: "getbalance", account_id: "PLR_78345", real_balance: 250, bonus_balance: 50, game_mode: 2, wallet_order: "cash_money,bonus_money" }
+                success_low_balance:
+                  summary: "✓ Success — near-zero real balance"
+                  value: { request: "getbalance", account_id: "PLR_78345", real_balance: 1, bonus_balance: 0, game_mode: 1, wallet_order: "cash_money,bonus_money" }
+
+  /add-in-simulation-queue?request=getbalance&error_code=1:
+    get:
+      operationId: simGetBalanceErr1
+      summary: "[✗ 1] GetBalance — Technical Error"
+      tags: ["Sim: GetBalance"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getbalance] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "internal_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1:
+                  summary: "✗ 1 — Technical Error"
+                  value: { request: getbalance, account_id: "PLR_78345", error_code: 1, error_message: "internal_error" }
+
+  /add-in-simulation-queue?request=getbalance&error_code=1000:
+    get:
+      operationId: simGetBalanceErr1000
+      summary: "[✗ 1000] GetBalance — Not Logged On"
+      tags: ["Sim: GetBalance"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getbalance] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1000 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "session_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1000:
+                  summary: "✗ 1000 — Not Logged On"
+                  value: { request: getbalance, account_id: "PLR_78345", error_code: 1000, error_message: "session_invalid" }
+
+  /add-in-simulation-queue?request=getbalance&error_code=1003:
+    get:
+      operationId: simGetBalanceErr1003
+      summary: "[✗ 1003] GetBalance — Authentication Failed"
+      tags: ["Sim: GetBalance"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getbalance] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1003 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "authentication_failed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1003:
+                  summary: "✗ 1003 — Authentication Failed"
+                  value: { request: getbalance, account_id: "PLR_78345", error_code: 1003, error_message: "authentication_failed" }
+
+  /add-in-simulation-queue?request=getbalance&error_code=1008:
+    get:
+      operationId: simGetBalanceErr1008
+      summary: "[✗ 1008] GetBalance — Missing Required Parameter"
+      tags: ["Sim: GetBalance"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getbalance] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1008 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "missing_parameter" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1008:
+                  summary: "✗ 1008 — Missing Required Parameter"
+                  value: { request: getbalance, account_id: "PLR_78345", error_code: 1008, error_message: "missing_parameter" }
+
+  /add-in-simulation-queue?request=getbalance&error_code=1035:
+    get:
+      operationId: simGetBalanceErr1035
+      summary: "[✗ 1035] GetBalance — Account Blocked"
+      tags: ["Sim: GetBalance"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [getbalance] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1035 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "account_blocked" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1035:
+                  summary: "✗ 1035 — Account Blocked"
+                  value: { request: getbalance, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=wager:
+    get:
+      operationId: simWager
+      summary: "Simulate Wager — ✓ success scenarios"
+      description: |
+        Queues a simulated **success** response for the next `/cloudagg?request=wager`
+        call by this `account_id`. To simulate an error, use the dedicated
+        `[✗ CODE]` paths listed below in this group.
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,      in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,   in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: real_balance,   in: query, required: false, schema: { type: number },  example: 245.00 }
+        - { name: bonus_balance,  in: query, required: false, schema: { type: number },  example: 50.00 }
+        - { name: transaction_id, in: query, required: false, schema: { type: string },  example: "SIM_TXN_WAGER_001" }
+        - { name: game_mode,      in: query, required: false, schema: { type: integer }, example: 1 }
+        - { name: wallet_order,   in: query, required: false, schema: { type: string },  example: "cash_money,bonus_money" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: "✓ Success — 5.00 wager from real balance"
+                  value: { request: "wager", account_id: "PLR_78345", real_balance: 245, bonus_balance: 50, transaction_id: "SIM_TXN_WAGER_001", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_bonus_deducted:
+                  summary: "✓ Success — 5.00 wager from bonus balance"
+                  value: { request: "wager", account_id: "PLR_78345", real_balance: 250, bonus_balance: 45, transaction_id: "SIM_TXN_WAGER_002", game_mode: 1, wallet_order: "bonus_money,cash_money" }
+                success_mixed_deduction:
+                  summary: "✓ Success — mixed real + bonus deduction"
+                  value: { request: "wager", account_id: "PLR_78345", real_balance: 247, bonus_balance: 48, transaction_id: "SIM_TXN_WAGER_003", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_large_wager:
+                  summary: "✓ Success — large wager (100.00)"
+                  value: { request: "wager", account_id: "PLR_78345", real_balance: 150, bonus_balance: 50, transaction_id: "SIM_TXN_WAGER_004", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_last_funds:
+                  summary: "✓ Success — wager leaves near-zero balance"
+                  value: { request: "wager", account_id: "PLR_78345", real_balance: 0.5, bonus_balance: 0, transaction_id: "SIM_TXN_WAGER_005", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_free_round:
+                  summary: "✓ Success — free round wager (game_mode=2, no balance change)"
+                  value: { request: "wager", account_id: "PLR_78345", real_balance: 250, bonus_balance: 50, transaction_id: "SIM_TXN_WAGER_006", game_mode: 2, wallet_order: "cash_money,bonus_money" }
+
+  /add-in-simulation-queue?request=wager&error_code=1:
+    get:
+      operationId: simWagerErr1
+      summary: "[✗ 1] Wager — Technical Error"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "internal_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1:
+                  summary: "✗ 1 — Technical Error"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 1, error_message: "internal_error" }
+
+  /add-in-simulation-queue?request=wager&error_code=110:
+    get:
+      operationId: simWagerErr110
+      summary: "[✗ 110] Wager — Operation Not Allowed"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 110 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "operation_not_allowed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_110:
+                  summary: "✗ 110 — Operation Not Allowed"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 110, error_message: "operation_not_allowed" }
+
+  /add-in-simulation-queue?request=wager&error_code=400:
+    get:
+      operationId: simWagerErr400
+      summary: "[✗ 400] Wager — Parameter Mismatch"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 400 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "transaction_parameter_mismatch" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_400:
+                  summary: "✗ 400 — Parameter Mismatch"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 400, error_message: "transaction_parameter_mismatch" }
+
+  /add-in-simulation-queue?request=wager&error_code=409:
+    get:
+      operationId: simWagerErr409
+      summary: "[✗ 409] Wager — Round Closed / Txn In Use"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 409 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "round_closed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_409:
+                  summary: "✗ 409 — Round Closed / Txn In Use"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 409, error_message: "round_closed" }
+                err_409_alt:
+                  summary: "✗ 409 — Round Closed / Txn In Use (alt: transaction id in use)"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 409, error_message: "transaction_id_in_use" }
+
+  /add-in-simulation-queue?request=wager&error_code=1000:
+    get:
+      operationId: simWagerErr1000
+      summary: "[✗ 1000] Wager — Not Logged On"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1000 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "session_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1000:
+                  summary: "✗ 1000 — Not Logged On"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 1000, error_message: "session_invalid" }
+
+  /add-in-simulation-queue?request=wager&error_code=1006:
+    get:
+      operationId: simWagerErr1006
+      summary: "[✗ 1006] Wager — Insufficient Funds"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1006 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "insufficient_funds" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1006:
+                  summary: "✗ 1006 — Insufficient Funds"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 1006, error_message: "insufficient_funds" }
+                err_1006_alt:
+                  summary: "✗ 1006 — Insufficient Funds (alt: insufficient bonus funds)"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 1006, error_message: "insufficient_bonus_funds" }
+
+  /add-in-simulation-queue?request=wager&error_code=1008:
+    get:
+      operationId: simWagerErr1008
+      summary: "[✗ 1008] Wager — Missing Required Parameter"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1008 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "missing_parameter" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1008:
+                  summary: "✗ 1008 — Missing Required Parameter"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 1008, error_message: "missing_parameter" }
+
+  /add-in-simulation-queue?request=wager&error_code=1019:
+    get:
+      operationId: simWagerErr1019
+      summary: "[✗ 1019] Wager — Gaming / Daily Limit"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1019 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "limit_exceeded" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1019:
+                  summary: "✗ 1019 — Gaming / Daily Limit"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 1019, error_message: "limit_exceeded" }
+                err_1019_alt:
+                  summary: "✗ 1019 — Gaming / Daily Limit (alt: daily limit exceeded)"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 1019, error_message: "daily_limit_exceeded" }
+
+  /add-in-simulation-queue?request=wager&error_code=1035:
+    get:
+      operationId: simWagerErr1035
+      summary: "[✗ 1035] Wager — Account Blocked"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1035 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "account_blocked" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1035:
+                  summary: "✗ 1035 — Account Blocked"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=result:
+    get:
+      operationId: simResult
+      summary: "Simulate Result — ✓ success scenarios"
+      description: |
+        Queues a simulated **success** response for the next `/cloudagg?request=result`
+        call by this `account_id`. To simulate an error, use the dedicated
+        `[✗ CODE]` paths listed below in this group.
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,      in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,   in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: real_balance,   in: query, required: false, schema: { type: number },  example: 257.50 }
+        - { name: bonus_balance,  in: query, required: false, schema: { type: number },  example: 50.00 }
+        - { name: transaction_id, in: query, required: false, schema: { type: string },  example: "SIM_TXN_RESULT_001" }
+        - { name: game_mode,      in: query, required: false, schema: { type: integer }, example: 1 }
+        - { name: wallet_order,   in: query, required: false, schema: { type: string },  example: "cash_money,bonus_money" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                success_win:
+                  summary: "✓ Success — win (12.50 credited to real)"
+                  value: { request: "result", account_id: "PLR_78345", real_balance: 257.5, bonus_balance: 50, transaction_id: "SIM_TXN_RESULT_001", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_big_win:
+                  summary: "✓ Success — big win (100.00 credited)"
+                  value: { request: "result", account_id: "PLR_78345", real_balance: 345, bonus_balance: 50, transaction_id: "SIM_TXN_RESULT_002", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_mega_win:
+                  summary: "✓ Success — mega win (500.00 credited)"
+                  value: { request: "result", account_id: "PLR_78345", real_balance: 745, bonus_balance: 50, transaction_id: "SIM_TXN_RESULT_003", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_loss:
+                  summary: "✓ Success — loss (no payout)"
+                  value: { request: "result", account_id: "PLR_78345", real_balance: 245, bonus_balance: 50, transaction_id: "SIM_TXN_RESULT_004", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_zero_win:
+                  summary: "✓ Success — zero win (explicit 0.00 award)"
+                  value: { request: "result", account_id: "PLR_78345", real_balance: 245, bonus_balance: 50, transaction_id: "SIM_TXN_RESULT_005", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_push:
+                  summary: "✓ Success — push / tie (win restores wager amount)"
+                  value: { request: "result", account_id: "PLR_78345", real_balance: 250, bonus_balance: 50, transaction_id: "SIM_TXN_RESULT_006", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_bonus_win:
+                  summary: "✓ Success — win credited to bonus wallet"
+                  value: { request: "result", account_id: "PLR_78345", real_balance: 245, bonus_balance: 75, transaction_id: "SIM_TXN_RESULT_007", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_free_round_win:
+                  summary: "✓ Success — free round win (game_mode=2)"
+                  value: { request: "result", account_id: "PLR_78345", real_balance: 260, bonus_balance: 50, transaction_id: "SIM_TXN_RESULT_008", game_mode: 2, wallet_order: "cash_money,bonus_money" }
+
+  /add-in-simulation-queue?request=result&error_code=1:
+    get:
+      operationId: simResultErr1
+      summary: "[✗ 1] Result — Technical Error"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "internal_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1:
+                  summary: "✗ 1 — Technical Error"
+                  value: { request: result, account_id: "PLR_78345", error_code: 1, error_message: "internal_error" }
+
+  /add-in-simulation-queue?request=result&error_code=102:
+    get:
+      operationId: simResultErr102
+      summary: "[✗ 102] Result — Original Wager Not Found"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 102 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "wager_not_found" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_102:
+                  summary: "✗ 102 — Original Wager Not Found"
+                  value: { request: result, account_id: "PLR_78345", error_code: 102, error_message: "wager_not_found" }
+
+  /add-in-simulation-queue?request=result&error_code=110:
+    get:
+      operationId: simResultErr110
+      summary: "[✗ 110] Result — Operation Not Allowed"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 110 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "operation_not_allowed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_110:
+                  summary: "✗ 110 — Operation Not Allowed"
+                  value: { request: result, account_id: "PLR_78345", error_code: 110, error_message: "operation_not_allowed" }
+
+  /add-in-simulation-queue?request=result&error_code=400:
+    get:
+      operationId: simResultErr400
+      summary: "[✗ 400] Result — Parameter Mismatch"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 400 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "transaction_parameter_mismatch" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_400:
+                  summary: "✗ 400 — Parameter Mismatch"
+                  value: { request: result, account_id: "PLR_78345", error_code: 400, error_message: "transaction_parameter_mismatch" }
+
+  /add-in-simulation-queue?request=result&error_code=409:
+    get:
+      operationId: simResultErr409
+      summary: "[✗ 409] Result — Round Already Closed"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 409 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "round_closed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_409:
+                  summary: "✗ 409 — Round Already Closed"
+                  value: { request: result, account_id: "PLR_78345", error_code: 409, error_message: "round_closed" }
+
+  /add-in-simulation-queue?request=result&error_code=1000:
+    get:
+      operationId: simResultErr1000
+      summary: "[✗ 1000] Result — Not Logged On"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1000 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "session_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1000:
+                  summary: "✗ 1000 — Not Logged On"
+                  value: { request: result, account_id: "PLR_78345", error_code: 1000, error_message: "session_invalid" }
+
+  /add-in-simulation-queue?request=result&error_code=1008:
+    get:
+      operationId: simResultErr1008
+      summary: "[✗ 1008] Result — Missing Required Parameter"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1008 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "missing_parameter" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1008:
+                  summary: "✗ 1008 — Missing Required Parameter"
+                  value: { request: result, account_id: "PLR_78345", error_code: 1008, error_message: "missing_parameter" }
+
+  /add-in-simulation-queue?request=result&error_code=1035:
+    get:
+      operationId: simResultErr1035
+      summary: "[✗ 1035] Result — Account Blocked"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1035 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "account_blocked" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1035:
+                  summary: "✗ 1035 — Account Blocked"
+                  value: { request: result, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=wagerAndResult:
+    get:
+      operationId: simWagerAndResult
+      summary: "Simulate WagerAndResult — ✓ success scenarios"
+      description: |
+        Queues a simulated **success** response for the next `/cloudagg?request=wagerAndResult`
+        call by this `account_id`. To simulate an error, use the dedicated
+        `[✗ CODE]` paths listed below in this group.
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,      in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,   in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: real_balance,   in: query, required: false, schema: { type: number },  example: 254.00 }
+        - { name: bonus_balance,  in: query, required: false, schema: { type: number },  example: 50.00 }
+        - { name: transaction_id, in: query, required: false, schema: { type: string },  example: "SIM_TXN_WAR_001" }
+        - { name: game_mode,      in: query, required: false, schema: { type: integer }, example: 1 }
+        - { name: wallet_order,   in: query, required: false, schema: { type: string },  example: "cash_money,bonus_money" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                success_win:
+                  summary: "✓ Success — win (5.00 wager, 9.00 win, net +4.00)"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 254, bonus_balance: 50, transaction_id: "SIM_TXN_WAR_001", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_big_win:
+                  summary: "✓ Success — big win (5.00 wager, 55.00 win, net +50.00)"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 295, bonus_balance: 50, transaction_id: "SIM_TXN_WAR_002", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_mega_win:
+                  summary: "✓ Success — mega win (5.00 wager, 505.00 win, net +500.00)"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 745, bonus_balance: 50, transaction_id: "SIM_TXN_WAR_003", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_push:
+                  summary: "✓ Success — push / break-even (win = wager)"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 250, bonus_balance: 50, transaction_id: "SIM_TXN_WAR_004", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_loss:
+                  summary: "✓ Success — loss (5.00 wager, 0 win)"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 245, bonus_balance: 50, transaction_id: "SIM_TXN_WAR_005", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_zero_win:
+                  summary: "✓ Success — zero explicit win (same as loss)"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 245, bonus_balance: 50, transaction_id: "SIM_TXN_WAR_006", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_bonus_win:
+                  summary: "✓ Success — win credited to bonus wallet"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 245, bonus_balance: 75, transaction_id: "SIM_TXN_WAR_007", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_bonus_deducted:
+                  summary: "✓ Success — wager deducted from bonus"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 250, bonus_balance: 54, transaction_id: "SIM_TXN_WAR_008", game_mode: 1, wallet_order: "bonus_money,cash_money" }
+                success_free_round:
+                  summary: "✓ Success — free round (game_mode=2)"
+                  value: { request: "wagerAndResult", account_id: "PLR_78345", real_balance: 259, bonus_balance: 50, transaction_id: "SIM_TXN_WAR_009", game_mode: 2, wallet_order: "cash_money,bonus_money" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=1:
+    get:
+      operationId: simWagerAndResultErr1
+      summary: "[✗ 1] WagerAndResult — Technical Error"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "internal_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1:
+                  summary: "✗ 1 — Technical Error"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 1, error_message: "internal_error" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=110:
+    get:
+      operationId: simWagerAndResultErr110
+      summary: "[✗ 110] WagerAndResult — Operation Not Allowed"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 110 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "operation_not_allowed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_110:
+                  summary: "✗ 110 — Operation Not Allowed"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 110, error_message: "operation_not_allowed" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=400:
+    get:
+      operationId: simWagerAndResultErr400
+      summary: "[✗ 400] WagerAndResult — Parameter Mismatch"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 400 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "transaction_parameter_mismatch" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_400:
+                  summary: "✗ 400 — Parameter Mismatch"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 400, error_message: "transaction_parameter_mismatch" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=409:
+    get:
+      operationId: simWagerAndResultErr409
+      summary: "[✗ 409] WagerAndResult — Round Closed / Txn In Use"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 409 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "round_closed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_409:
+                  summary: "✗ 409 — Round Closed / Txn In Use"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 409, error_message: "round_closed" }
+                err_409_alt:
+                  summary: "✗ 409 — Round Closed / Txn In Use (alt: transaction id in use)"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 409, error_message: "transaction_id_in_use" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=1000:
+    get:
+      operationId: simWagerAndResultErr1000
+      summary: "[✗ 1000] WagerAndResult — Not Logged On"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1000 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "session_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1000:
+                  summary: "✗ 1000 — Not Logged On"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 1000, error_message: "session_invalid" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=1006:
+    get:
+      operationId: simWagerAndResultErr1006
+      summary: "[✗ 1006] WagerAndResult — Insufficient Funds"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1006 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "insufficient_funds" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1006:
+                  summary: "✗ 1006 — Insufficient Funds"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 1006, error_message: "insufficient_funds" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=1008:
+    get:
+      operationId: simWagerAndResultErr1008
+      summary: "[✗ 1008] WagerAndResult — Missing Required Parameter"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1008 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "missing_parameter" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1008:
+                  summary: "✗ 1008 — Missing Required Parameter"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 1008, error_message: "missing_parameter" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=1019:
+    get:
+      operationId: simWagerAndResultErr1019
+      summary: "[✗ 1019] WagerAndResult — Gaming / Daily Limit"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1019 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "limit_exceeded" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1019:
+                  summary: "✗ 1019 — Gaming / Daily Limit"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 1019, error_message: "limit_exceeded" }
+                err_1019_alt:
+                  summary: "✗ 1019 — Gaming / Daily Limit (alt: daily limit exceeded)"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 1019, error_message: "daily_limit_exceeded" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=1035:
+    get:
+      operationId: simWagerAndResultErr1035
+      summary: "[✗ 1035] WagerAndResult — Account Blocked"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1035 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "account_blocked" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1035:
+                  summary: "✗ 1035 — Account Blocked"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=refund:
+    get:
+      operationId: simRefund
+      summary: "Simulate Refund — ✓ success scenarios"
+      description: |
+        Queues a simulated **success** response for the next `/cloudagg?request=refund`
+        call by this `account_id`. To simulate an error, use the dedicated
+        `[✗ CODE]` paths listed below in this group.
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,      in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,   in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: real_balance,   in: query, required: false, schema: { type: number },  example: 250.00 }
+        - { name: bonus_balance,  in: query, required: false, schema: { type: number },  example: 50.00 }
+        - { name: transaction_id, in: query, required: false, schema: { type: string },  example: "SIM_TXN_REFUND_001" }
+        - { name: game_mode,      in: query, required: false, schema: { type: integer }, example: 1 }
+        - { name: wallet_order,   in: query, required: false, schema: { type: string },  example: "cash_money,bonus_money" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: "✓ Success — full wager refund to real balance"
+                  value: { request: "refund", account_id: "PLR_78345", real_balance: 250, bonus_balance: 50, transaction_id: "SIM_TXN_REFUND_001", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_bonus_refund:
+                  summary: "✓ Success — refund credited to bonus wallet"
+                  value: { request: "refund", account_id: "PLR_78345", real_balance: 245, bonus_balance: 55, transaction_id: "SIM_TXN_REFUND_002", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_partial:
+                  summary: "✓ Success — partial refund (2.50 of 5.00 wager)"
+                  value: { request: "refund", account_id: "PLR_78345", real_balance: 247.5, bonus_balance: 50, transaction_id: "SIM_TXN_REFUND_003", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_restore_zero:
+                  summary: "✓ Success — refund restores zeroed-out balance"
+                  value: { request: "refund", account_id: "PLR_78345", real_balance: 5, bonus_balance: 0, transaction_id: "SIM_TXN_REFUND_004", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_large_refund:
+                  summary: "✓ Success — large wager refund (100.00)"
+                  value: { request: "refund", account_id: "PLR_78345", real_balance: 350, bonus_balance: 50, transaction_id: "SIM_TXN_REFUND_005", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+
+  /add-in-simulation-queue?request=refund&error_code=1:
+    get:
+      operationId: simRefundErr1
+      summary: "[✗ 1] Refund — Technical Error"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "internal_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1:
+                  summary: "✗ 1 — Technical Error"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 1, error_message: "internal_error" }
+
+  /add-in-simulation-queue?request=refund&error_code=102:
+    get:
+      operationId: simRefundErr102
+      summary: "[✗ 102] Refund — Original Wager Not Found"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 102 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "wager_not_found" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_102:
+                  summary: "✗ 102 — Original Wager Not Found"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 102, error_message: "wager_not_found" }
+
+  /add-in-simulation-queue?request=refund&error_code=110:
+    get:
+      operationId: simRefundErr110
+      summary: "[✗ 110] Refund — Result Already Exists"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 110 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "result_already_exists" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_110:
+                  summary: "✗ 110 — Result Already Exists"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 110, error_message: "result_already_exists" }
+
+  /add-in-simulation-queue?request=refund&error_code=400:
+    get:
+      operationId: simRefundErr400
+      summary: "[✗ 400] Refund — Parameter Mismatch"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 400 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "transaction_parameter_mismatch" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_400:
+                  summary: "✗ 400 — Parameter Mismatch"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 400, error_message: "transaction_parameter_mismatch" }
+
+  /add-in-simulation-queue?request=refund&error_code=409:
+    get:
+      operationId: simRefundErr409
+      summary: "[✗ 409] Refund — Already Refunded"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 409 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "already_refunded" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_409:
+                  summary: "✗ 409 — Already Refunded"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 409, error_message: "already_refunded" }
+
+  /add-in-simulation-queue?request=refund&error_code=1000:
+    get:
+      operationId: simRefundErr1000
+      summary: "[✗ 1000] Refund — Not Logged On"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1000 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "session_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1000:
+                  summary: "✗ 1000 — Not Logged On"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 1000, error_message: "session_invalid" }
+
+  /add-in-simulation-queue?request=refund&error_code=1008:
+    get:
+      operationId: simRefundErr1008
+      summary: "[✗ 1008] Refund — Missing Required Parameter"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1008 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "missing_parameter" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1008:
+                  summary: "✗ 1008 — Missing Required Parameter"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 1008, error_message: "missing_parameter" }
+
+  /add-in-simulation-queue?request=refund&error_code=1035:
+    get:
+      operationId: simRefundErr1035
+      summary: "[✗ 1035] Refund — Account Blocked"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1035 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "account_blocked" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1035:
+                  summary: "✗ 1035 — Account Blocked"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=jackpot:
+    get:
+      operationId: simJackpot
+      summary: "Simulate Jackpot — ✓ success scenarios"
+      description: |
+        Queues a simulated **success** response for the next `/cloudagg?request=jackpot`
+        call by this `account_id`. To simulate an error, use the dedicated
+        `[✗ CODE]` paths listed below in this group.
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,      in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,   in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: real_balance,   in: query, required: false, schema: { type: number },  example: 10250.00 }
+        - { name: bonus_balance,  in: query, required: false, schema: { type: number },  example: 50.00 }
+        - { name: transaction_id, in: query, required: false, schema: { type: string },  example: "SIM_TXN_JP_001" }
+        - { name: game_mode,      in: query, required: false, schema: { type: integer }, example: 1 }
+        - { name: wallet_order,   in: query, required: false, schema: { type: string },  example: "cash_money,bonus_money" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                success_mega:
+                  summary: "✓ Success — Mega Jackpot (100,000.00 win)"
+                  value: { request: "jackpot", account_id: "PLR_78345", real_balance: 100250, bonus_balance: 50, transaction_id: "SIM_TXN_JP_001", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_grand:
+                  summary: "✓ Success — Grand Jackpot (10,000.00 win)"
+                  value: { request: "jackpot", account_id: "PLR_78345", real_balance: 10250, bonus_balance: 50, transaction_id: "SIM_TXN_JP_002", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_major:
+                  summary: "✓ Success — Major Jackpot (1,000.00 win)"
+                  value: { request: "jackpot", account_id: "PLR_78345", real_balance: 1250, bonus_balance: 50, transaction_id: "SIM_TXN_JP_003", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_minor:
+                  summary: "✓ Success — Minor Jackpot (260.00 win)"
+                  value: { request: "jackpot", account_id: "PLR_78345", real_balance: 510, bonus_balance: 50, transaction_id: "SIM_TXN_JP_004", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_mini:
+                  summary: "✓ Success — Mini Jackpot (50.00 win)"
+                  value: { request: "jackpot", account_id: "PLR_78345", real_balance: 300, bonus_balance: 50, transaction_id: "SIM_TXN_JP_005", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_local_progressive:
+                  summary: "✓ Success — Local Progressive Jackpot (500.00 win)"
+                  value: { request: "jackpot", account_id: "PLR_78345", real_balance: 750, bonus_balance: 50, transaction_id: "SIM_TXN_JP_006", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_network_progressive:
+                  summary: "✓ Success — Network Progressive Jackpot (25,000.00 win)"
+                  value: { request: "jackpot", account_id: "PLR_78345", real_balance: 25250, bonus_balance: 50, transaction_id: "SIM_TXN_JP_007", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=1:
+    get:
+      operationId: simJackpotErr1
+      summary: "[✗ 1] Jackpot — Technical Error"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "internal_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1:
+                  summary: "✗ 1 — Technical Error"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 1, error_message: "internal_error" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=110:
+    get:
+      operationId: simJackpotErr110
+      summary: "[✗ 110] Jackpot — Operation Not Allowed"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 110 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "operation_not_allowed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_110:
+                  summary: "✗ 110 — Operation Not Allowed"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 110, error_message: "operation_not_allowed" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=400:
+    get:
+      operationId: simJackpotErr400
+      summary: "[✗ 400] Jackpot — Parameter Mismatch"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 400 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "transaction_parameter_mismatch" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_400:
+                  summary: "✗ 400 — Parameter Mismatch"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 400, error_message: "transaction_parameter_mismatch" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=409:
+    get:
+      operationId: simJackpotErr409
+      summary: "[✗ 409] Jackpot — Transaction ID In Use"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 409 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "transaction_id_in_use" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_409:
+                  summary: "✗ 409 — Transaction ID In Use"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 409, error_message: "transaction_id_in_use" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=1000:
+    get:
+      operationId: simJackpotErr1000
+      summary: "[✗ 1000] Jackpot — Not Logged On"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1000 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "session_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1000:
+                  summary: "✗ 1000 — Not Logged On"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 1000, error_message: "session_invalid" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=1008:
+    get:
+      operationId: simJackpotErr1008
+      summary: "[✗ 1008] Jackpot — Missing Required Parameter"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1008 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "missing_parameter" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1008:
+                  summary: "✗ 1008 — Missing Required Parameter"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 1008, error_message: "missing_parameter" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=1035:
+    get:
+      operationId: simJackpotErr1035
+      summary: "[✗ 1035] Jackpot — Account Blocked"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1035 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "account_blocked" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1035:
+                  summary: "✗ 1035 — Account Blocked"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=purchase:
+    get:
+      operationId: simPurchase
+      summary: "Simulate Purchase — ✓ success scenarios"
+      description: |
+        Queues a simulated **success** response for the next `/cloudagg?request=purchase`
+        call by this `account_id`. To simulate an error, use the dedicated
+        `[✗ CODE]` paths listed below in this group.
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,      in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,   in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: real_balance,   in: query, required: false, schema: { type: number },  example: 245.00 }
+        - { name: bonus_balance,  in: query, required: false, schema: { type: number },  example: 50.00 }
+        - { name: transaction_id, in: query, required: false, schema: { type: string },  example: "SIM_TXN_PUR_001" }
+        - { name: game_mode,      in: query, required: false, schema: { type: integer }, example: 1 }
+        - { name: wallet_order,   in: query, required: false, schema: { type: string },  example: "cash_money,bonus_money" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                success:
+                  summary: "✓ Success — feature purchased from real balance (5.00 deducted)"
+                  value: { request: "purchase", account_id: "PLR_78345", real_balance: 245, bonus_balance: 50, transaction_id: "SIM_TXN_PUR_001", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_bonus_deducted:
+                  summary: "✓ Success — feature purchased from bonus balance"
+                  value: { request: "purchase", account_id: "PLR_78345", real_balance: 250, bonus_balance: 45, transaction_id: "SIM_TXN_PUR_002", game_mode: 1, wallet_order: "bonus_money,cash_money" }
+                success_mixed_funds:
+                  summary: "✓ Success — deducted from both real and bonus"
+                  value: { request: "purchase", account_id: "PLR_78345", real_balance: 247, bonus_balance: 48, transaction_id: "SIM_TXN_PUR_003", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_large_purchase:
+                  summary: "✓ Success — expensive feature (50.00 deducted)"
+                  value: { request: "purchase", account_id: "PLR_78345", real_balance: 200, bonus_balance: 50, transaction_id: "SIM_TXN_PUR_004", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+                success_discounted:
+                  summary: "✓ Success — discounted purchase (2.50 deducted)"
+                  value: { request: "purchase", account_id: "PLR_78345", real_balance: 247.5, bonus_balance: 50, transaction_id: "SIM_TXN_PUR_005", game_mode: 1, wallet_order: "cash_money,bonus_money" }
+
+  /add-in-simulation-queue?request=purchase&error_code=1:
+    get:
+      operationId: simPurchaseErr1
+      summary: "[✗ 1] Purchase — Technical Error"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "internal_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1:
+                  summary: "✗ 1 — Technical Error"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 1, error_message: "internal_error" }
+
+  /add-in-simulation-queue?request=purchase&error_code=110:
+    get:
+      operationId: simPurchaseErr110
+      summary: "[✗ 110] Purchase — Operation Not Allowed"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 110 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "operation_not_allowed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_110:
+                  summary: "✗ 110 — Operation Not Allowed"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 110, error_message: "operation_not_allowed" }
+
+  /add-in-simulation-queue?request=purchase&error_code=400:
+    get:
+      operationId: simPurchaseErr400
+      summary: "[✗ 400] Purchase — Parameter Mismatch"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 400 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "transaction_parameter_mismatch" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_400:
+                  summary: "✗ 400 — Parameter Mismatch"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 400, error_message: "transaction_parameter_mismatch" }
+
+  /add-in-simulation-queue?request=purchase&error_code=1000:
+    get:
+      operationId: simPurchaseErr1000
+      summary: "[✗ 1000] Purchase — Not Logged On"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1000 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "session_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1000:
+                  summary: "✗ 1000 — Not Logged On"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 1000, error_message: "session_invalid" }
+
+  /add-in-simulation-queue?request=purchase&error_code=1003:
+    get:
+      operationId: simPurchaseErr1003
+      summary: "[✗ 1003] Purchase — Authentication Failed"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1003 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "authentication_failed" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1003:
+                  summary: "✗ 1003 — Authentication Failed"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 1003, error_message: "authentication_failed" }
+
+  /add-in-simulation-queue?request=purchase&error_code=1006:
+    get:
+      operationId: simPurchaseErr1006
+      summary: "[✗ 1006] Purchase — Insufficient Funds"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1006 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "insufficient_funds" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1006:
+                  summary: "✗ 1006 — Insufficient Funds"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 1006, error_message: "insufficient_funds" }
+
+  /add-in-simulation-queue?request=purchase&error_code=1008:
+    get:
+      operationId: simPurchaseErr1008
+      summary: "[✗ 1008] Purchase — Missing Required Parameter"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1008 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "missing_parameter" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1008:
+                  summary: "✗ 1008 — Missing Required Parameter"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 1008, error_message: "missing_parameter" }
+
+  /add-in-simulation-queue?request=purchase&error_code=1019:
+    get:
+      operationId: simPurchaseErr1019
+      summary: "[✗ 1019] Purchase — Gaming / Daily Limit"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1019 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "limit_exceeded" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1019:
+                  summary: "✗ 1019 — Gaming / Daily Limit"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 1019, error_message: "limit_exceeded" }
+                err_1019_alt:
+                  summary: "✗ 1019 — Gaming / Daily Limit (alt: daily limit exceeded)"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 1019, error_message: "daily_limit_exceeded" }
+
+  /add-in-simulation-queue?request=purchase&error_code=1035:
+    get:
+      operationId: simPurchaseErr1035
+      summary: "[✗ 1035] Purchase — Account Blocked"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 1035 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "account_blocked" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_1035:
+                  summary: "✗ 1035 — Account Blocked"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  TAGS
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1520,6 +3588,67 @@ tags:
     description: |
       Deduct an in-game feature purchase, free-spin buy, or tournament entry fee.
       Session ID is required but game-session-independent for tournament tickets.
+
+  - name: Test Utilities
+    description: |
+      **Local test helpers** — manage in-memory accounts, sessions, and balances.
+      Use these to set up player state before running wallet callback tests.
+
+  - name: Create Account
+    description: Create a new player account with balance, currency, locale, game mode, wallet order, and block status.
+
+  - name: Create Session
+    description: Map a `session_id` to an existing `account_id`. Required before any wallet callback that uses a session token.
+
+  - name: Set Real Balance
+    description: Overwrite a player's real money balance. Use to force `Out-of-Money` (set to 0) or top-up before tests.
+
+  - name: Set Bonus Balance
+    description: Overwrite a player's bonus money balance. Useful for testing bonus-wallet draw order scenarios.
+
+  - name: Block Account
+    description: Block or unblock a player account. A blocked account returns error `1035` on wager, wagerAndResult, and purchase.
+
+  - name: Set Wallet Order
+    description: Change the draw-order priority between `cash_money` and `bonus_money` for a player account.
+
+  - name: Simulation
+    description: |
+      **Simulation queue** — pre-program the next response for a given `account_id`
+      and `request` type. When `isSimulationMode` is on, the queued entry overrides
+      real in-memory processing for one call, then is removed.
+
+      **Workflow:**
+      1. Open the operation below matching the wallet call you want to intercept.
+      2. Pick a scenario example from the dropdown — all fields are pre-filled.
+      3. Click **Execute** to queue it.
+      4. Trigger the wallet callback (from Swagger or CloudAggregator).
+      5. The queued response fires once, then is consumed automatically.
+      6. Use **Clear Simulations** to reset the queue at any time.
+
+  - name: "Sim: GetAccount"
+    description: "Queue a simulated response for the next **GetAccount** (5.3) call. Errors: 1 1003 1008."
+
+  - name: "Sim: GetBalance"
+    description: "Queue a simulated response for the next **GetBalance** (5.4) call. Errors: 1 1000 1003 1008."
+
+  - name: "Sim: Wager"
+    description: "Queue a simulated response for the next **Wager** (5.5) call. Errors: 1 110 400 409 1000 1006 1019 1035."
+
+  - name: "Sim: Result"
+    description: "Queue a simulated response for the next **Result** (5.6) call. Errors: 1 110 400 409."
+
+  - name: "Sim: WagerAndResult"
+    description: "Queue a simulated response for the next **WagerAndResult** (5.7) call. Errors: 1 110 400 1006 1019 1035."
+
+  - name: "Sim: Refund"
+    description: "Queue a simulated response for the next **Refund** (5.8) call. Errors: 1 102 110 400."
+
+  - name: "Sim: Jackpot"
+    description: "Queue a simulated response for the next **Jackpot** (5.9) call. Errors: 1 110 400."
+
+  - name: "Sim: Purchase"
+    description: "Queue a simulated response for the next **Purchase** (5.10) call. Errors: 1 110 1006 1008 1019 1035."
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  APPENDIX A — Response Status Codes (Section 7)

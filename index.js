@@ -21,6 +21,13 @@ let IN_MEMORY_WALLET_DATA = {
   transactions: [],
 };
 
+function resetStore() {
+  IN_MEMORY_WALLET_DATA.accounts = {};
+  IN_MEMORY_WALLET_DATA.sessions = {};
+  IN_MEMORY_WALLET_DATA.transactions = [];
+  SIMULATIONS_QUEUE.length = 0;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const API_VERSION = "2.0";
 
@@ -40,13 +47,13 @@ function err(code, status, message) {
 }
 
 function balanceFields(acct) {
-  const balance = parseFloat(
-    (acct.real_balance + acct.bonus_balance).toFixed(2),
-  );
+  const real = parseFloat(acct.real_balance) || 0;
+  const bonus = parseFloat(acct.bonus_balance) || 0;
+  const balance = parseFloat((real + bonus).toFixed(2));
   return {
     balance,
-    real_balance: acct.real_balance,
-    bonus_balance: acct.bonus_balance,
+    real_balance: real,
+    bonus_balance: bonus,
     game_mode: acct.game_mode,
     wallet_order: acct.wallet_order,
   };
@@ -123,7 +130,7 @@ app.get("/create-data", (req, res) => {
 
 const isSimulationMode = () => true; // SIMULATION_QUEUE or LIVE
 app.get("/clear-simulations", (req, res) => {
-    SIMULATIONS_QUEUE = [];
+    SIMULATIONS_QUEUE.length = 0;
     res.json(ok({ message: "Simulations queue cleared", SIMULATIONS_QUEUE }));
 });
 
@@ -438,7 +445,7 @@ app.get("/cloudagg", (req, res) => {
       win_amount,
     } = q;
 
-    if (isSimulationMode() && nextSimulation?.request === "wagerandresult") {
+    if (isSimulationMode() && nextSimulation?.request?.toLowerCase() === "wagerandresult") {
       // Remove from queue
       SIMULATIONS_QUEUE.splice(SIMULATIONS_QUEUE.indexOf(nextSimulation), 1);
       // If error_code is present, return error response
@@ -698,7 +705,12 @@ app.get("/cloudagg", (req, res) => {
   return res.json(err(1008, "Parameter Required", "missing_parameter"));
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/api-docs`);
-});
+module.exports = { app, IN_MEMORY_WALLET_DATA, SIMULATIONS_QUEUE, resetStore };
+
+// Only start the server if this file is run directly (not required by tests)
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}/api-docs`);
+  });
+}

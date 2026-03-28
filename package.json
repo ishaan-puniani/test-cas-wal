@@ -20,10 +20,31 @@
     "yaml": "^2.3.4"
   },
   "scripts": {
-    "start": "node mock-operator-wallet.js",
+    "start": "node index.js",
+    "test": "jest --forceExit",
+    "test:watch": "jest --watch --forceExit",
+    "test:coverage": "jest --coverage --forceExit",
     "test:flow": "bash scripts/flow-test.sh",
     "test:flow:advanced": "bash scripts/flow-test-advanced.sh",
-    "test:flows": "echo 'Running basic flow...' && bash scripts/flow-test.sh && echo '' && echo 'Running advanced flow...' && bash scripts/flow-test-advanced.sh",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test:flows": "echo 'Running basic flow...' && bash scripts/flow-test.sh && echo '' && echo 'Running advanced flow...' && bash scripts/flow-test-advanced.sh"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "collectCoverageFrom": ["index.js"],
+    "coverageReporters": ["text", "lcov", "html"],
+    "coverageDirectory": "coverage",
+    "coverageThreshold": {
+      "global": {
+        "lines": 80,
+        "functions": 80,
+        "branches": 70,
+        "statements": 80
+      }
+    }
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
   }
 }

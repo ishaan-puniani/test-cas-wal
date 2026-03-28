@@ -14,7 +14,7 @@ A strict-mode Node.js mock wallet server that implements the CloudAggregator Pla
   - `refund`
   - `jackpot`
   - `purchase`
-- **All error codes** (200, 1, 102, 110, 400, 409, 1000, 1003, 1006, 1007, 1008, 1019, 1035)
+- **All error codes** (200, 1, 102, 110, 400, 409, 1000, 1003, 1006, 1007, 1008, 1019, 1035, 5002, 5007, 5011, 5012, 5013, 6001)
 - **Idempotency** built-in using transaction IDs
 - **Round-state tracking** (open → pending → completed)
 - **Responsible gaming limits** (daily wager, loss, session time, deposit)
@@ -230,6 +230,12 @@ All responses return HTTP 200 with status code in JSON body:
 | 1008 | Parameter Required | Missing required parameter | Missing: request, account_id, etc. |
 | 1019 | Gaming Limit | Responsible gaming limit exceeded | Daily wager/loss/session limit breach |
 | 1035 | Account Blocked | Account suspended/blocked | Account status = 'blocked' |
+| 5002 | Transaction Amount Cannot Be Negative | Negative amount submitted | Any operation sent with a negative bet/win/refund/jackpot/purchase amount |
+| 5007 | Refund Not Allowed Over Win Transactions | Refund attempted on a result transaction | `transaction_id` belongs to a result/win, not a wager |
+| 5011 | Limit Error: Bet Amount Too High | Bet exceeds configured bet limit | Simulation only (wager, wagerAndResult) |
+| 5012 | Limit Error: Win Amount Too High | Win exceeds configured win limit | Simulation only (result, wagerAndResult) |
+| 5013 | Limit Error: Purchase Amount Too High | Purchase exceeds configured purchase limit | Simulation only (purchase) |
+| 6001 | Network Error | Upstream network failure | Simulation only (all transaction types) |
 
 ### Testing Error Codes
 

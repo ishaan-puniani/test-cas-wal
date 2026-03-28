@@ -2532,6 +2532,69 @@ paths:
                   summary: "✗ 1035 — Account Blocked"
                   value: { request: wager, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
 
+  /add-in-simulation-queue?request=wager&error_code=5002:
+    get:
+      operationId: simWagerErr5002
+      summary: "[✗ 5002] Wager — Transaction Amount Cannot Be Negative"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5002 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "amount_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5002:
+                  summary: "✗ 5002 — Transaction Amount Cannot Be Negative"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 5002, error_message: "amount_invalid" }
+
+  /add-in-simulation-queue?request=wager&error_code=5011:
+    get:
+      operationId: simWagerErr5011
+      summary: "[✗ 5011] Wager — Bet Amount Too High"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5011 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "bet_amount_too_high" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5011:
+                  summary: "✗ 5011 — Limit Error: Bet Amount Too High"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 5011, error_message: "bet_amount_too_high" }
+
+  /add-in-simulation-queue?request=wager&error_code=6001:
+    get:
+      operationId: simWagerErr6001
+      summary: "[✗ 6001] Wager — Network Error"
+      tags: ["Sim: Wager"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wager] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 6001 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "network_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_6001:
+                  summary: "✗ 6001 — Network Error"
+                  value: { request: wager, account_id: "PLR_78345", error_code: 6001, error_message: "network_error" }
+
   /add-in-simulation-queue?request=result:
     get:
       operationId: simResult
@@ -2748,6 +2811,69 @@ paths:
                 err_1035:
                   summary: "✗ 1035 — Account Blocked"
                   value: { request: result, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=result&error_code=5002:
+    get:
+      operationId: simResultErr5002
+      summary: "[✗ 5002] Result — Transaction Amount Cannot Be Negative"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5002 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "amount_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5002:
+                  summary: "✗ 5002 — Transaction Amount Cannot Be Negative"
+                  value: { request: result, account_id: "PLR_78345", error_code: 5002, error_message: "amount_invalid" }
+
+  /add-in-simulation-queue?request=result&error_code=5012:
+    get:
+      operationId: simResultErr5012
+      summary: "[✗ 5012] Result — Win Amount Too High"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5012 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "win_amount_too_high" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5012:
+                  summary: "✗ 5012 — Limit Error: Win Amount Too High"
+                  value: { request: result, account_id: "PLR_78345", error_code: 5012, error_message: "win_amount_too_high" }
+
+  /add-in-simulation-queue?request=result&error_code=6001:
+    get:
+      operationId: simResultErr6001
+      summary: "[✗ 6001] Result — Network Error"
+      tags: ["Sim: Result"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [result] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 6001 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "network_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_6001:
+                  summary: "✗ 6001 — Network Error"
+                  value: { request: result, account_id: "PLR_78345", error_code: 6001, error_message: "network_error" }
 
   /add-in-simulation-queue?request=wagerAndResult:
     get:
@@ -2996,6 +3122,90 @@ paths:
                   summary: "✗ 1035 — Account Blocked"
                   value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
 
+  /add-in-simulation-queue?request=wagerAndResult&error_code=5002:
+    get:
+      operationId: simWagerAndResultErr5002
+      summary: "[✗ 5002] WagerAndResult — Transaction Amount Cannot Be Negative"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5002 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "amount_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5002:
+                  summary: "✗ 5002 — Transaction Amount Cannot Be Negative"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 5002, error_message: "amount_invalid" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=5011:
+    get:
+      operationId: simWagerAndResultErr5011
+      summary: "[✗ 5011] WagerAndResult — Bet Amount Too High"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5011 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "bet_amount_too_high" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5011:
+                  summary: "✗ 5011 — Limit Error: Bet Amount Too High"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 5011, error_message: "bet_amount_too_high" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=5012:
+    get:
+      operationId: simWagerAndResultErr5012
+      summary: "[✗ 5012] WagerAndResult — Win Amount Too High"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5012 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "win_amount_too_high" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5012:
+                  summary: "✗ 5012 — Limit Error: Win Amount Too High"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 5012, error_message: "win_amount_too_high" }
+
+  /add-in-simulation-queue?request=wagerAndResult&error_code=6001:
+    get:
+      operationId: simWagerAndResultErr6001
+      summary: "[✗ 6001] WagerAndResult — Network Error"
+      tags: ["Sim: WagerAndResult"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [wagerAndResult] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 6001 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "network_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_6001:
+                  summary: "✗ 6001 — Network Error"
+                  value: { request: wagerAndResult, account_id: "PLR_78345", error_code: 6001, error_message: "network_error" }
+
   /add-in-simulation-queue?request=refund:
     get:
       operationId: simRefund
@@ -3204,6 +3414,69 @@ paths:
                   summary: "✗ 1035 — Account Blocked"
                   value: { request: refund, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
 
+  /add-in-simulation-queue?request=refund&error_code=5002:
+    get:
+      operationId: simRefundErr5002
+      summary: "[✗ 5002] Refund — Transaction Amount Cannot Be Negative"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5002 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "amount_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5002:
+                  summary: "✗ 5002 — Transaction Amount Cannot Be Negative"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 5002, error_message: "amount_invalid" }
+
+  /add-in-simulation-queue?request=refund&error_code=5007:
+    get:
+      operationId: simRefundErr5007
+      summary: "[✗ 5007] Refund — Not Allowed Over Win Transactions"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5007 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "refund_not_allowed_over_win" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5007:
+                  summary: "✗ 5007 — Refund Not Allowed Over Win Transactions"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 5007, error_message: "refund_not_allowed_over_win" }
+
+  /add-in-simulation-queue?request=refund&error_code=6001:
+    get:
+      operationId: simRefundErr6001
+      summary: "[✗ 6001] Refund — Network Error"
+      tags: ["Sim: Refund"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [refund] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 6001 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "network_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_6001:
+                  summary: "✗ 6001 — Network Error"
+                  value: { request: refund, account_id: "PLR_78345", error_code: 6001, error_message: "network_error" }
+
   /add-in-simulation-queue?request=jackpot:
     get:
       operationId: simJackpot
@@ -3396,6 +3669,48 @@ paths:
                 err_1035:
                   summary: "✗ 1035 — Account Blocked"
                   value: { request: jackpot, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=5002:
+    get:
+      operationId: simJackpotErr5002
+      summary: "[✗ 5002] Jackpot — Transaction Amount Cannot Be Negative"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5002 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "amount_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5002:
+                  summary: "✗ 5002 — Transaction Amount Cannot Be Negative"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 5002, error_message: "amount_invalid" }
+
+  /add-in-simulation-queue?request=jackpot&error_code=6001:
+    get:
+      operationId: simJackpotErr6001
+      summary: "[✗ 6001] Jackpot — Network Error"
+      tags: ["Sim: Jackpot"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [jackpot] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 6001 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "network_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_6001:
+                  summary: "✗ 6001 — Network Error"
+                  value: { request: jackpot, account_id: "PLR_78345", error_code: 6001, error_message: "network_error" }
 
   /add-in-simulation-queue?request=purchase:
     get:
@@ -3628,6 +3943,69 @@ paths:
                 err_1035:
                   summary: "✗ 1035 — Account Blocked"
                   value: { request: purchase, account_id: "PLR_78345", error_code: 1035, error_message: "account_blocked" }
+
+  /add-in-simulation-queue?request=purchase&error_code=5002:
+    get:
+      operationId: simPurchaseErr5002
+      summary: "[✗ 5002] Purchase — Transaction Amount Cannot Be Negative"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5002 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "amount_invalid" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5002:
+                  summary: "✗ 5002 — Transaction Amount Cannot Be Negative"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 5002, error_message: "amount_invalid" }
+
+  /add-in-simulation-queue?request=purchase&error_code=5013:
+    get:
+      operationId: simPurchaseErr5013
+      summary: "[✗ 5013] Purchase — Purchase Amount Too High"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 5013 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "purchase_amount_too_high" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_5013:
+                  summary: "✗ 5013 — Limit Error: Purchase Amount Too High"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 5013, error_message: "purchase_amount_too_high" }
+
+  /add-in-simulation-queue?request=purchase&error_code=6001:
+    get:
+      operationId: simPurchaseErr6001
+      summary: "[✗ 6001] Purchase — Network Error"
+      tags: ["Sim: Purchase"]
+      security: []
+      parameters:
+        - { name: request,       in: query, required: true,  schema: { type: string, enum: [purchase] } }
+        - { name: account_id,    in: query, required: true,  schema: { type: string }, example: "PLR_78345" }
+        - { name: error_code,    in: query, required: true,  schema: { type: integer }, example: 6001 }
+        - { name: error_message, in: query, required: false, schema: { type: string }, example: "network_error" }
+      responses:
+        '200':
+          description: Simulation queued.
+          content:
+            application/json:
+              examples:
+                err_6001:
+                  summary: "✗ 6001 — Network Error"
+                  value: { request: purchase, account_id: "PLR_78345", error_code: 6001, error_message: "network_error" }
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  TAGS
@@ -3917,6 +4295,9 @@ tags:
       | `1006` | Out of Money | Insufficient funds |
       | `1019` | Gaming Limit | Responsible gaming limit exceeded |
       | `1035` | Account Blocked | Player is self-excluded or blocked |
+      | `5002` | Transaction Amount Cannot Be Negative | Negative bet amount sent |
+      | `5011` | Limit Error: Bet Amount Too High | Bet exceeds configured bet limit |
+      | `6001` | Network Error | Upstream network failure |
 
   - name: "Sim: Result"
     description: |
@@ -3939,6 +4320,9 @@ tags:
       | `110` | Operation Not Allowed | Round is already closed |
       | `400` | Transaction Parameter Mismatch | Duplicate `transaction_id` with conflicting fields |
       | `409` | Round Already Closed | Round was previously finalised |
+      | `5002` | Transaction Amount Cannot Be Negative | Negative win amount sent |
+      | `5012` | Limit Error: Win Amount Too High | Win exceeds configured win limit |
+      | `6001` | Network Error | Upstream network failure |
 
   - name: "Sim: WagerAndResult"
     description: |
@@ -3960,6 +4344,10 @@ tags:
       | `1006` | Out of Money | Insufficient funds |
       | `1019` | Gaming Limit | Responsible gaming limit exceeded |
       | `1035` | Account Blocked | Player is self-excluded or blocked |
+      | `5002` | Transaction Amount Cannot Be Negative | Negative bet or win amount sent |
+      | `5011` | Limit Error: Bet Amount Too High | Bet exceeds configured bet limit |
+      | `5012` | Limit Error: Win Amount Too High | Win exceeds configured win limit |
+      | `6001` | Network Error | Upstream network failure |
 
   - name: "Sim: Refund"
     description: |
@@ -3982,6 +4370,9 @@ tags:
       | `110` | Operation Not Allowed (result already delivered) | A Result was already accepted for this round |
       | `400` | Transaction Parameter Mismatch | Duplicate `transaction_id` with conflicting fields |
       | `409` | Already Refunded | This wager has already been reversed |
+      | `5002` | Transaction Amount Cannot Be Negative | Negative refund amount sent |
+      | `5007` | Refund Not Allowed Over Win Transactions | `transaction_id` belongs to a result/win, not a wager |
+      | `6001` | Network Error | Upstream network failure |
 
   - name: "Sim: Jackpot"
     description: |
@@ -4002,6 +4393,8 @@ tags:
       | `1000` | Not Logged On | Session lookup returned no match |
       | `1008` | Parameter Required | A required query parameter is missing |
       | `1035` | Account Blocked | Player is self-excluded or blocked |
+      | `5002` | Transaction Amount Cannot Be Negative | Negative jackpot amount sent |
+      | `6001` | Network Error | Upstream network failure |
 
   - name: "Sim: Purchase"
     description: |
@@ -4022,6 +4415,9 @@ tags:
       | `1008` | Parameter Required | A required query parameter is missing |
       | `1019` | Gaming Limit | Responsible gaming limit would be exceeded |
       | `1035` | Account Blocked | Player is self-excluded or blocked |
+      | `5002` | Transaction Amount Cannot Be Negative | Negative purchase amount sent |
+      | `5013` | Limit Error: Purchase Amount Too High | Purchase exceeds configured purchase limit |
+      | `6001` | Network Error | Upstream network failure |
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  APPENDIX A — Response Status Codes (Section 7)

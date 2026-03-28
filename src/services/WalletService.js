@@ -65,6 +65,8 @@ class WalletService {
     }
 
     const bet = parseFloat(bet_amount);
+    if (bet < 0)
+      throw new BusinessError(5002, 'Transaction amount cannot be negative', 'amount_invalid');
     if (acct.real_balance + acct.bonus_balance < bet)
       throw new BusinessError(1006, 'Out of Money', 'insufficient_funds');
 
@@ -92,6 +94,8 @@ class WalletService {
     }
 
     const win     = parseFloat(win_amount);
+    if (win < 0)
+      throw new BusinessError(5002, 'Transaction amount cannot be negative', 'amount_invalid');
     const updated = await this.repo.updateAccount(account_id, {
       real_balance: parseFloat((acct.real_balance + win).toFixed(2)),
     });
@@ -117,6 +121,8 @@ class WalletService {
 
     const bet = parseFloat(bet_amount);
     const win = parseFloat(win_amount);
+    if (bet < 0 || win < 0)
+      throw new BusinessError(5002, 'Transaction amount cannot be negative', 'amount_invalid');
     if (acct.real_balance + acct.bonus_balance < bet)
       throw new BusinessError(1006, 'Out of Money', 'insufficient_funds');
 
@@ -142,12 +148,18 @@ class WalletService {
     if (!acct) throw new BusinessError(1, 'Technical Error', 'internal_error');
 
     const original = await this.repo.findWagerTransaction(transaction_id);
-    if (!original) throw new BusinessError(102, 'Wager Not Found', 'wager_not_found');
+    if (!original) {
+      const anyTxn = await this.repo.findTransaction(transaction_id);
+      if (anyTxn) throw new BusinessError(5007, 'Refund not allowed over win transactions', 'refund_not_allowed_over_win');
+      throw new BusinessError(102, 'Wager Not Found', 'wager_not_found');
+    }
 
     const existingRefund = await this.repo.findRefundByOriginalId(transaction_id);
     if (existingRefund) throw new DuplicateError(existingRefund.response);
 
     const amount  = refund_amount ? parseFloat(refund_amount) : original.amount;
+    if (amount < 0)
+      throw new BusinessError(5002, 'Transaction amount cannot be negative', 'amount_invalid');
     const updated = await this.repo.updateAccount(account_id, {
       real_balance: parseFloat((acct.real_balance + amount).toFixed(2)),
     });
@@ -176,6 +188,8 @@ class WalletService {
     }
 
     const amount  = parseFloat(jackpot_amount);
+    if (amount < 0)
+      throw new BusinessError(5002, 'Transaction amount cannot be negative', 'amount_invalid');
     const updated = await this.repo.updateAccount(account_id, {
       real_balance: parseFloat((acct.real_balance + amount).toFixed(2)),
     });
@@ -197,6 +211,8 @@ class WalletService {
     if (existing) throw new DuplicateError(existing.response);
 
     const amount = parseFloat(purchase_amount);
+    if (amount < 0)
+      throw new BusinessError(5002, 'Transaction amount cannot be negative', 'amount_invalid');
     if (acct.real_balance + acct.bonus_balance < amount)
       throw new BusinessError(1006, 'Out of Money', 'insufficient_funds');
 

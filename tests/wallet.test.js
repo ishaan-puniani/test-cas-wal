@@ -518,6 +518,16 @@ describe('GET /cloudagg?request=wager (live)', () => {
     expect(res.body.code).toBe(1035);
   });
 
+  test('✗ 5002 — negative bet amount', async () => {
+    await createAccount();
+    await createSession();
+    const res = await request(app).get('/cloudagg' + qs({
+      request: 'wager', session_id: SESSION, account_id: PLR,
+      transaction_id: txnId(), round_id: 'RND_1', bet_amount: -10,
+    }));
+    expect(res.body.code).toBe(5002);
+  });
+
   test('✗ 1000 — session registered but account data deleted', async () => {
     await createAccount();
     await createSession();
@@ -629,6 +639,15 @@ describe('GET /cloudagg?request=result (live)', () => {
     }));
     expect(res.body.code).toBe(1);
   });
+
+  test('✗ 5002 — negative win amount', async () => {
+    await createAccount();
+    const res = await request(app).get('/cloudagg' + qs({
+      request: 'result', account_id: PLR,
+      transaction_id: txnId('R'), win_amount: -5, game_status: 'completed',
+    }));
+    expect(res.body.code).toBe(5002);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -731,6 +750,21 @@ describe('GET /cloudagg?request=wagerAndResult (live)', () => {
     expect(res.body.code).toBe(1035);
   });
 
+  test('✗ 5002 — negative bet or win amount', async () => {
+    await createAccount();
+    await createSession();
+    const rNeg = await request(app).get('/cloudagg' + qs({
+      request: 'wagerAndResult', session_id: SESSION, account_id: PLR,
+      transaction_id: txnId(), round_id: 'RND_1', bet_amount: -5, win_amount: 0,
+    }));
+    expect(rNeg.body.code).toBe(5002);
+    const rNegWin = await request(app).get('/cloudagg' + qs({
+      request: 'wagerAndResult', session_id: SESSION, account_id: PLR,
+      transaction_id: txnId(), round_id: 'RND_1', bet_amount: 5, win_amount: -1,
+    }));
+    expect(rNegWin.body.code).toBe(5002);
+  });
+
   test('✗ 1000 — session registered but account data deleted', async () => {
     await createAccount();
     await createSession();
@@ -824,6 +858,29 @@ describe('GET /cloudagg?request=refund (live)', () => {
     expect(res.body.code).toBe(1);
   });
 
+  test('✗ 5002 — negative refund amount', async () => {
+    const wId = await wager(10);
+    const res = await request(app).get('/cloudagg' + qs({
+      request: 'refund', account_id: PLR, transaction_id: wId, refund_amount: -5,
+    }));
+    expect(res.body.code).toBe(5002);
+  });
+
+  test('✗ 5007 — refund over win (result) transaction', async () => {
+    await createAccount();
+    // Record a result transaction (not a wager)
+    const rId = txnId('R');
+    await request(app).get('/cloudagg' + qs({
+      request: 'result', account_id: PLR,
+      transaction_id: rId, win_amount: 20, game_status: 'completed',
+    }));
+    // Attempt to refund the result transaction_id — should be 5007
+    const res = await request(app).get('/cloudagg' + qs({
+      request: 'refund', account_id: PLR, transaction_id: rId,
+    }));
+    expect(res.body.code).toBe(5007);
+  });
+
   test('✓ refund with explicit refund_amount overrides original wager amount', async () => {
     const wId = await wager(50);
     const res = await request(app).get('/cloudagg' + qs({
@@ -881,6 +938,14 @@ describe('GET /cloudagg?request=jackpot (live)', () => {
       request: 'jackpot', account_id: 'GHOST', transaction_id: txnId(), jackpot_amount: 100,
     }));
     expect(res.body.code).toBe(1);
+  });
+
+  test('✗ 5002 — negative jackpot amount', async () => {
+    await createAccount();
+    const res = await request(app).get('/cloudagg' + qs({
+      request: 'jackpot', account_id: PLR, transaction_id: txnId('JP'), jackpot_amount: -100,
+    }));
+    expect(res.body.code).toBe(5002);
   });
 
   test('✗ 400 — same txn_id different account', async () => {
@@ -966,6 +1031,15 @@ describe('GET /cloudagg?request=purchase (live)', () => {
       transaction_id: txnId(),
     }));
     expect(res.body.code).toBe(1008);
+  });
+
+  test('✗ 5002 — negative purchase amount', async () => {
+    await createAccount();
+    const res = await request(app).get('/cloudagg' + qs({
+      request: 'purchase', account_id: PLR,
+      transaction_id: txnId(), purchase_amount: -10,
+    }));
+    expect(res.body.code).toBe(5002);
   });
 });
 
@@ -1189,6 +1263,9 @@ describe('Simulation: wager', () => {
     [1008, 'missing_parameter'],
     [1019, 'limit_exceeded'],
     [1035, 'account_blocked'],
+    [5002, 'amount_invalid'],
+    [5011, 'bet_amount_too_high'],
+    [6001, 'network_error'],
   ])('✗ error_code=%i — %s', async (code, msg) => {
     await request(app).get('/add-in-simulation-queue' + qs({
       request: 'wager', account_id: PLR, error_code: code, error_message: msg,
@@ -1253,6 +1330,9 @@ describe('Simulation: result', () => {
     [1000, 'session_invalid'],
     [1008, 'missing_parameter'],
     [1035, 'account_blocked'],
+    [5002, 'amount_invalid'],
+    [5012, 'win_amount_too_high'],
+    [6001, 'network_error'],
   ])('✗ error_code=%i — %s', async (code, msg) => {
     await request(app).get('/add-in-simulation-queue' + qs({
       request: 'result', account_id: PLR, error_code: code, error_message: msg,
@@ -1318,6 +1398,10 @@ describe('Simulation: wagerAndResult', () => {
     [1008, 'missing_parameter'],
     [1019, 'limit_exceeded'],
     [1035, 'account_blocked'],
+    [5002, 'amount_invalid'],
+    [5011, 'bet_amount_too_high'],
+    [5012, 'win_amount_too_high'],
+    [6001, 'network_error'],
   ])('✗ error_code=%i — %s', async (code, msg) => {
     await request(app).get('/add-in-simulation-queue' + qs({
       request: 'wagerAndResult', account_id: PLR, error_code: code, error_message: msg,
@@ -1381,6 +1465,9 @@ describe('Simulation: refund', () => {
     [1000, 'session_invalid'],
     [1008, 'missing_parameter'],
     [1035, 'account_blocked'],
+    [5002, 'amount_invalid'],
+    [5007, 'refund_not_allowed_over_win'],
+    [6001, 'network_error'],
   ])('✗ error_code=%i — %s', async (code, msg) => {
     await request(app).get('/add-in-simulation-queue' + qs({
       request: 'refund', account_id: PLR, error_code: code, error_message: msg,
@@ -1440,6 +1527,8 @@ describe('Simulation: jackpot', () => {
     [1000, 'session_invalid'],
     [1008, 'missing_parameter'],
     [1035, 'account_blocked'],
+    [5002, 'amount_invalid'],
+    [6001, 'network_error'],
   ])('✗ error_code=%i — %s', async (code, msg) => {
     await request(app).get('/add-in-simulation-queue' + qs({
       request: 'jackpot', account_id: PLR, error_code: code, error_message: msg,
@@ -1504,6 +1593,9 @@ describe('Simulation: purchase', () => {
     [1008, 'missing_parameter'],
     [1019, 'limit_exceeded'],
     [1035, 'account_blocked'],
+    [5002, 'amount_invalid'],
+    [5013, 'purchase_amount_too_high'],
+    [6001, 'network_error'],
   ])('✗ error_code=%i — %s', async (code, msg) => {
     await request(app).get('/add-in-simulation-queue' + qs({
       request: 'purchase', account_id: PLR, error_code: code, error_message: msg,

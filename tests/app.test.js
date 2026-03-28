@@ -100,7 +100,7 @@ describe('/reset-store', () => {
     // Seed some data
     await repo.createAccount('PLR1', { real_balance: 100, bonus_balance: 0 });
     await repo.saveSession('S1', 'PLR1');
-    queue.push({ account_id: 'PLR1', request: 'getbalance' });
+    await queue.push({ account_id: 'PLR1', request: 'getbalance' });
 
     const res = await request(app).get('/reset-store');
     expect(res.status).toBe(200);
@@ -118,7 +118,7 @@ describe('/reset-store', () => {
     queue.push({ account_id: 'PLR1', request: 'wager' });
 
     await request(app).get('/reset-store');
-    expect(queue.all()).toHaveLength(0);
+    expect(await queue.all()).toHaveLength(0);
   });
 
   test('is idempotent — second reset still returns empty store', async () => {

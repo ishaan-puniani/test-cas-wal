@@ -1,11 +1,11 @@
 'use strict';
 
-const { InMemoryWalletRepository } = require('./src/repository/InMemoryWalletRepository');
-const { SimulationQueue }          = require('./src/SimulationQueue');
-const { createApp }                = require('./src/app');
+const { InMemoryWalletRepository }          = require('./src/repository/InMemoryWalletRepository');
+const { InMemorySimulationQueueRepository } = require('./src/repository/InMemorySimulationQueueRepository');
+const { createApp }                         = require('./src/app');
 
 const repository      = new InMemoryWalletRepository();
-const simulationQueue = new SimulationQueue();
+const simulationQueue = new InMemorySimulationQueueRepository();
 const app             = createApp(repository, simulationQueue);
 
 // Backward-compatible exports — tests use these same names

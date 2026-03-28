@@ -34,9 +34,9 @@ function registerCloudaggRoutes(app, repository, simulationQueue) {
 
     // ── Simulation layer ───────────────────────────────────────────────────────
     if (isSimulationMode()) {
-      const sim = simulationQueue.findFor(q.account_id, request);
+      const sim = await simulationQueue.findFor(q.account_id, request);
       if (sim) {
-        simulationQueue.remove(sim);
+        await simulationQueue.remove(sim);
         if (sim.error_code) return res.json(simErr(sim));
 
         if (request === 'getaccount') {

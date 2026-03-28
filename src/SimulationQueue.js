@@ -1,20 +1,9 @@
 'use strict';
 
-class SimulationQueue {
-  constructor() { this.queue = []; }
+// Backward-compatible alias — the implementation now lives in the repository layer.
+// Swap InMemorySimulationQueueRepository for a Redis/Mongo variant without changing callers.
+const { InMemorySimulationQueueRepository } = require('./repository/InMemorySimulationQueueRepository');
 
-  push(sim)  { this.queue.push(sim); }
-
-  // Match by both account_id AND request type (prevents leaking sims across ops)
-  findFor(accountId, requestType) {
-    return this.queue.find(
-      s => s.account_id === accountId && s.request?.toLowerCase() === requestType
-    );
-  }
-
-  remove(sim) { this.queue.splice(this.queue.indexOf(sim), 1); }
-  clear()     { this.queue.length = 0; }
-  all()       { return this.queue; }
-}
+const SimulationQueue = InMemorySimulationQueueRepository;
 
 module.exports = { SimulationQueue };

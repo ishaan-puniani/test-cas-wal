@@ -1,6 +1,6 @@
 'use strict';
 
-const { InMemoryWalletRepository } = require('../src/repository/InMemoryWalletRepository');
+const { InMemoryWalletRepository } = require('../src/repository/IN_MEMORY/InMemoryWalletRepository');
 
 let repo;
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const { SimulationQueueRepository } = require('./SimulationQueueRepository');
+const { SimulationQueueRepository } = require('../SimulationQueueRepository');
 
 class InMemorySimulationQueueRepository extends SimulationQueueRepository {
   constructor() {

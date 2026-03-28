@@ -1566,6 +1566,46 @@ paths:
                         demo-session: "PLR_78345"
                       transactions: []
 
+  /reset-store:
+    get:
+      operationId: resetStore
+      summary: "Reset Store — Wipe all accounts, sessions, and transactions"
+      description: |
+        Deletes **all** data from the in-memory store in a single call:
+        - All player accounts
+        - All session mappings
+        - The full transaction log
+        - All queued simulations
+
+        Use this at the start of a new test scenario to guarantee a clean slate.
+        The response echoes back the store state after the reset, which will
+        always be `accounts: {}`, `sessions: {}`, `transactions: []`.
+
+        > **Note:** This is equivalent to restarting the server. Prefer calling
+        > this over restarting so that the Swagger UI session stays alive.
+      tags:
+        - Test Utilities
+      security: []
+      responses:
+        '200':
+          description: Store wiped. Returns the empty store snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                reset:
+                  summary: Store reset successfully
+                  value:
+                    code: 200
+                    status: "Success"
+                    api_version: "2.0"
+                    message: "Store reset"
+                    data:
+                      accounts: {}
+                      sessions: {}
+                      transactions: []
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  VIRTUAL PATHS — one path stub per create-data operation.
 #  All resolve to GET /create-data with the matching `request` parameter.
@@ -3773,6 +3813,17 @@ tags:
       session refresh is required. Use this to test CMA-compliant game flows
       where the game reads `wallet_order` from `getaccount` and enforces it
       throughout the session.
+
+  - name: Reset Store
+    description: |
+      Wipe the entire in-memory store in a single call — all accounts, sessions,
+      transactions, and queued simulations are deleted atomically.
+
+      Use this as the first step in any test scenario that needs a guaranteed
+      clean state, or as the last step to clean up after a test run.
+
+      After a reset the store is identical to a fresh server start:
+      `accounts: {}`, `sessions: {}`, `transactions: []`.
 
   - name: Simulation
     description: |

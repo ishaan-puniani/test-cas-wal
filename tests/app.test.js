@@ -2,7 +2,7 @@
 
 const request = require('supertest');
 const { createApp } = require('../src/app');
-const { InMemoryWalletRepository } = require('../src/repository/InMemoryWalletRepository');
+const { InMemoryWalletRepository } = require('../src/repository/IN_MEMORY/InMemoryWalletRepository');
 const { SimulationQueue } = require('../src/SimulationQueue');
 
 function makeApp() {

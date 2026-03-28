@@ -1,6 +1,6 @@
 'use strict';
 
-const { WalletRepository } = require('./WalletRepository');
+const { WalletRepository } = require('../WalletRepository');
 
 class InMemoryWalletRepository extends WalletRepository {
   constructor() {

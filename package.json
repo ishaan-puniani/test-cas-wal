@@ -31,7 +31,7 @@
   "jest": {
     "testEnvironment": "node",
     "testMatch": ["**/tests/**/*.test.js"],
-    "collectCoverageFrom": ["index.js"],
+    "collectCoverageFrom": ["src/**/*.js", "index.js", "!src/repository/WalletRepository.js"],
     "coverageReporters": ["text", "lcov", "html"],
     "coverageDirectory": "coverage",
     "coverageThreshold": {
